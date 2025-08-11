@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guía de Estudio: Lunchtime</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FEF3C7; /* Amarillo pastel */
+        }
+        h1, h2 {
+            font-family: 'Fredoka One', cursive;
+        }
+        .game-card {
+            perspective: 1000px;
+        }
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        .game-card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 1rem;
+        }
+        .card-front {
+            background-color: #FBBF24; /* Ámbar */
+            color: white;
+            font-size: 3rem;
+        }
+        .card-back {
+            background-color: #A7F3D0; /* Verde menta */
+            color: #1F2937; /* Gris oscuro */
+            transform: rotateY(180deg);
+            font-size: 1.5rem;
+            flex-direction: column;
+            padding: 0.5rem;
+        }
+        .emoji {
+            font-size: 3rem;
+        }
+        .btn {
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .feedback {
+            transition: opacity 0.5s, transform 0.5s;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-12">
+            <h1 class="text-5xl md:text-6xl text-amber-600 mb-2">¡A estudiar para Inglés!</h1>
+            <p class="text-xl text-gray-600">Unidad 4: Lunchtime</p>
+        </header>
+
+        <main class="space-y-16">
+
+            <!-- Sección 1: Vocabulario -->
+            <section id="vocabulary" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl text-emerald-600 mb-4 text-center">1. Vocabulary: Lunchtime 🍔</h2>
+                <p class="text-center mb-6">Juego de Memoria. ¡Encuentra los pares!</p>
+                <div id="memory-game-board" class="grid grid-cols-4 sm:grid-cols-5 gap-3 md:gap-4">
+                    <!-- Las tarjetas se generan con JS -->
+                </div>
+                <div class="text-center mt-6">
+                    <button id="reset-memory-game" class="btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-full text-lg">Reiniciar Juego</button>
+                </div>
+            </section>
+
+            <!-- Sección 2: Números 11-20 (Actualizado) -->
+            <section id="numbers" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl text-sky-600 mb-4 text-center">2. Numbers: 11-20 ✍️</h2>
+                <p class="text-center mb-6">Mira el número y elige cómo se escribe. ¡Escucha la pronunciación!</p>
+                <div id="numbers-game" class="text-center bg-sky-100 p-6 rounded-xl">
+                    <div id="number-item-display" class="text-7xl mb-4 font-bold"></div>
+                    <p id="number-question" class="text-xl font-bold mb-6"></p>
+                    <div id="number-options" class="flex flex-wrap justify-center gap-4">
+                        <!-- Opciones de números se generan con JS -->
+                    </div>
+                    <div id="number-feedback" class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            </section>
+
+            <!-- Sección 3: Have got -->
+            <section id="have-got" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl text-purple-600 mb-4 text-center">3. Have you got...? 🥪</h2>
+                <p class="text-center mb-6">Mira la lonchera y responde la pregunta.</p>
+                <div id="have-got-game" class="bg-purple-100 p-6 rounded-xl text-center">
+                    <p class="text-lg mb-2">In my lunchbox, I have got:</p>
+                    <div id="lunchbox-contents" class="text-5xl mb-4 flex justify-center gap-4"></div>
+                    <p id="have-got-question" class="text-2xl font-bold my-6 h-8"></p>
+                    <div id="have-got-answers" class="flex justify-center gap-4">
+                        <button data-answer="yes" class="btn bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl">Yes, I have.</button>
+                        <button data-answer="no" class="btn bg-red-500 text-white font-bold py-3 px-8 rounded-full text-xl">No, I haven't.</button>
+                    </div>
+                    <div id="have-got-feedback" class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+                 <div class="text-center mt-6">
+                    <button id="next-have-got" class="btn bg-purple-500 text-white font-bold py-2 px-6 rounded-full text-lg">Siguiente Pregunta</button>
+                </div>
+            </section>
+
+            <!-- Sección 4: Like / Don't like -->
+            <section id="like" class="bg-white p-6 rounded-2xl shadow-lg">
+                <h2 class="text-3xl text-rose-600 mb-4 text-center">4. I like / I don't like 👍👎</h2>
+                <p class="text-center mb-6">¿Te gusta esta comida? ¡Presiona un botón y repite la oración!</p>
+                <div id="like-game" class="bg-rose-100 p-6 rounded-xl text-center">
+                    <div id="like-food-item" class="text-7xl mb-6"></div>
+                    <div class="flex justify-center gap-6">
+                        <button data-choice="like" class="btn bg-green-400 p-4 rounded-full text-5xl transform hover:scale-110">👍</button>
+                        <button data-choice="dont-like" class="btn bg-red-400 p-4 rounded-full text-5xl transform hover:scale-110">👎</button>
+                    </div>
+                    <p id="like-sentence" class="mt-6 text-2xl font-bold h-8"></p>
+                </div>
+                 <div class="text-center mt-6">
+                    <button id="next-like-food" class="btn bg-rose-500 text-white font-bold py-2 px-6 rounded-full text-lg">Otra Comida</button>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- Utilidad de Voz ---
+        const synth = window.speechSynthesis;
+        function speak(text) {
+            if (synth.speaking) {
+                console.error('SpeechSynthesis.speaking');
+                return;
+            }
+            if (text !== '') {
+                const utterThis = new SpeechSynthesisUtterance(text);
+                utterThis.lang = 'en-US';
+                utterThis.pitch = 1.2;
+                utterThis.rate = 0.9;
+                synth.speak(utterThis);
+            }
+        }
+
+        // --- Datos del Juego ---
+        const foodItems = [
+            { name: 'apple', emoji: '🍎' },
+            { name: 'banana', emoji: '🍌' },
+            { name: 'sandwich', emoji: '🥪' },
+            { name: 'juice', emoji: '🧃' },
+            { name: 'water', emoji: '💧' },
+            { name: 'salad', emoji: '🥗' },
+            { name: 'cheese', emoji: '🧀' },
+            { name: 'chicken', emoji: '🍗' },
+            { name: 'pizza', emoji: '🍕' },
+            { name: 'yogurt', emoji: '🍦' }
+        ];
+
+        // --- 1. Juego de Memoria (Vocabulary) ---
+        const memoryGameBoard = document.getElementById('memory-game-board');
+        const resetMemoryGameBtn = document.getElementById('reset-memory-game');
+        let flippedCards = [];
+        let matchedPairs = 0;
+        let lockBoard = false;
+
+        function createMemoryBoard() {
+            memoryGameBoard.innerHTML = '';
+            matchedPairs = 0;
+            const cardData = [...foodItems, ...foodItems].sort(() => 0.5 - Math.random());
+            
+            cardData.forEach(item => {
+                const card = document.createElement('div');
+                card.classList.add('game-card', 'h-24', 'md:h-28');
+                card.dataset.name = item.name;
+                card.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-face card-front">?</div>
+                        <div class="card-back">
+                            <span class="emoji">${item.emoji}</span>
+                            <span class="font-bold text-center">${item.name}</span>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener('click', flipCard);
+                memoryGameBoard.appendChild(card);
+            });
+        }
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === flippedCards[0]) return;
+            this.classList.add('flipped');
+            if (flippedCards.length === 0) {
+                flippedCards.push(this);
+                return;
+            }
+            flippedCards.push(this);
+            lockBoard = true;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            const [card1, card2] = flippedCards;
+            const isMatch = card1.dataset.name === card2.dataset.name;
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            flippedCards.forEach(card => card.removeEventListener('click', flipCard));
+            speak(flippedCards[0].dataset.name);
+            matchedPairs++;
+            if (matchedPairs === foodItems.length) {
+                setTimeout(() => {
+                    alert('¡Felicidades! ¡Encontraste todos los pares!');
+                    speak('Congratulations! You found them all!');
+                }, 500);
+            }
+            resetBoard();
+        }
+
+        function unflipCards() {
+            setTimeout(() => {
+                flippedCards.forEach(card => card.classList.remove('flipped'));
+                resetBoard();
+            }, 1200);
+        }
+
+        function resetBoard() {
+            [flippedCards, lockBoard] = [[], false];
+        }
+
+        resetMemoryGameBtn.addEventListener('click', createMemoryBoard);
+
+        // --- 2. Juego de Números (11-20) - ACTUALIZADO ---
+        const numberItemDisplay = document.getElementById('number-item-display');
+        const numberQuestion = document.getElementById('number-question');
+        const numberOptionsContainer = document.getElementById('number-options');
+        const numberFeedback = document.getElementById('number-feedback');
+        const numberWords = {
+            11: 'eleven', 12: 'twelve', 13: 'thirteen', 14: 'fourteen', 15: 'fifteen',
+            16: 'sixteen', 17: 'seventeen', 18: 'eighteen', 19: 'nineteen', 20: 'twenty'
+        };
+        const allNumberWords = Object.values(numberWords);
+        let correctNumberWord;
+
+        function setupNumberGame() {
+            const correctNumber = Math.floor(Math.random() * 10) + 11; // 11 a 20
+            correctNumberWord = numberWords[correctNumber];
+
+            numberItemDisplay.textContent = correctNumber;
+            numberQuestion.textContent = 'How do you write this number?';
+            numberFeedback.textContent = '';
+            numberFeedback.classList.add('opacity-0', 'scale-90');
+
+            const options = new Set([correctNumberWord]);
+            while (options.size < 3) {
+                const randomWord = allNumberWords[Math.floor(Math.random() * allNumberWords.length)];
+                options.add(randomWord);
+            }
+
+            const shuffledOptions = Array.from(options).sort(() => 0.5 - Math.random());
+            numberOptionsContainer.innerHTML = '';
+            shuffledOptions.forEach(opt => {
+                const button = document.createElement('button');
+                button.classList.add('btn', 'bg-sky-500', 'text-white', 'font-bold', 'py-3', 'px-5', 'rounded-full', 'text-lg', 'md:text-xl');
+                button.textContent = opt;
+                button.addEventListener('click', checkNumberAnswer);
+                numberOptionsContainer.appendChild(button);
+            });
+        }
+
+        function checkNumberAnswer(e) {
+            const selectedWord = e.target.textContent;
+            numberFeedback.classList.remove('opacity-0', 'scale-90');
+            if (selectedWord === correctNumberWord) {
+                numberFeedback.textContent = 'Correct! 🎉';
+                numberFeedback.classList.remove('text-red-500');
+                numberFeedback.classList.add('text-green-500');
+                speak(correctNumberWord);
+                setTimeout(setupNumberGame, 1500);
+            } else {
+                numberFeedback.textContent = 'Try again! ❌';
+                numberFeedback.classList.remove('text-green-500');
+                numberFeedback.classList.add('text-red-500');
+            }
+        }
+
+        // --- 3. Juego "Have you got...?" ---
+        const lunchboxContentsEl = document.getElementById('lunchbox-contents');
+        const haveGotQuestionEl = document.getElementById('have-got-question');
+        const haveGotAnswersEl = document.getElementById('have-got-answers');
+        const haveGotFeedbackEl = document.getElementById('have-got-feedback');
+        const nextHaveGotBtn = document.getElementById('next-have-got');
+        let lunchboxItems = [];
+        let currentQuestionItem;
+        let isItemInLunchbox;
+
+        function setupHaveGotGame() {
+            haveGotFeedbackEl.textContent = '';
+            haveGotFeedbackEl.classList.add('opacity-0', 'scale-90');
+            const shuffledFoods = foodItems.sort(() => 0.5 - Math.random());
+            lunchboxItems = shuffledFoods.slice(0, 3);
+            lunchboxContentsEl.innerHTML = lunchboxItems.map(item => `<span>${item.emoji}</span>`).join('');
+
+            const shouldAskAboutPresentItem = Math.random() > 0.5;
+            if (shouldAskAboutPresentItem) {
+                currentQuestionItem = lunchboxItems[Math.floor(Math.random() * lunchboxItems.length)];
+                isItemInLunchbox = true;
+            } else {
+                const absentItems = foodItems.filter(item => !lunchboxItems.includes(item));
+                currentQuestionItem = absentItems[Math.floor(Math.random() * absentItems.length)];
+                isItemInLunchbox = false;
+            }
+            
+            const questionText = `Have you got a ${currentQuestionItem.name}?`;
+            haveGotQuestionEl.textContent = questionText;
+            speak(questionText);
+        }
+
+        haveGotAnswersEl.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'BUTTON') return;
+            const answer = e.target.dataset.answer;
+            haveGotFeedbackEl.classList.remove('opacity-0', 'scale-90');
+            
+            if ((answer === 'yes' && isItemInLunchbox) || (answer === 'no' && !isItemInLunchbox)) {
+                haveGotFeedbackEl.textContent = 'Correct! ✅';
+                haveGotFeedbackEl.classList.remove('text-red-500');
+                haveGotFeedbackEl.classList.add('text-green-500');
+                speak('Correct!');
+            } else {
+                haveGotFeedbackEl.textContent = 'Incorrect! Try the next one. ❌';
+                haveGotFeedbackEl.classList.remove('text-green-500');
+                haveGotFeedbackEl.classList.add('text-red-500');
+                speak('Incorrect');
+            }
+            setTimeout(setupHaveGotGame, 2000);
+        });
+        
+        nextHaveGotBtn.addEventListener('click', setupHaveGotGame);
+
+        // --- 4. Actividad "I like / I don't like" ---
+        const likeFoodItemEl = document.getElementById('like-food-item');
+        const likeGameEl = document.getElementById('like-game');
+        const likeSentenceEl = document.getElementById('like-sentence');
+        const nextLikeFoodBtn = document.getElementById('next-like-food');
+
+        function setupLikeGame() {
+            const randomFood = foodItems[Math.floor(Math.random() * foodItems.length)];
+            likeFoodItemEl.textContent = randomFood.emoji;
+            likeFoodItemEl.dataset.name = randomFood.name;
+            likeSentenceEl.textContent = '';
+        }
+
+        likeGameEl.addEventListener('click', (e) => {
+            const choice = e.target.closest('button')?.dataset.choice;
+            if (!choice) return;
+            const foodName = likeFoodItemEl.dataset.name;
+            let sentence = (choice === 'like') ? `I like ${foodName}.` : `I don't like ${foodName}.`;
+            likeSentenceEl.textContent = sentence;
+            speak(sentence);
+        });
+        
+        nextLikeFoodBtn.addEventListener('click', setupLikeGame);
+
+        // --- Inicializar todos los juegos ---
+        createMemoryBoard();
+        setupNumberGame();
+        setupHaveGotGame();
+        setupLikeGame();
+    });
+    </script>
+</body>
+</html>
+```
+He realizado el cambio en la sección de los números. Los otros juegos permanecen igual.
+
+Si se te ocurre alguna otra modificación o necesitas añadir más actividades, no dudes en decírmelo. ¡Estoy aquí para ayud
