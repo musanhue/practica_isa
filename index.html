@@ -26,16 +26,11 @@
         .feedback { transition: opacity 0.5s, transform 0.5s; }
         html { scroll-behavior: smooth; }
         
-        /* Estilos del contador de puntos */
         #score-counter {
             transition: transform 0.3s ease-out;
         }
-        .score-plus {
-            animation: score-plus-anim 0.6s ease;
-        }
-        .score-minus {
-            animation: score-minus-anim 0.6s ease;
-        }
+        .score-plus { animation: score-plus-anim 0.6s ease; }
+        .score-minus { animation: score-minus-anim 0.6s ease; }
         @keyframes score-plus-anim {
             0% { transform: scale(1); background-color: #A7F3D0; }
             50% { transform: scale(1.25); background-color: #A7F3D0; }
@@ -50,7 +45,6 @@
 </head>
 <body class="text-gray-800 pt-32">
 
-    <!-- Contador de Puntos Fijo -->
     <div id="score-counter" class="fixed top-4 right-4 bg-white p-3 md:p-4 rounded-2xl shadow-lg text-center z-30">
         <div class="text-base font-bold text-gray-500">PUNTOS</div>
         <div id="score-value" class="text-4xl font-bold text-amber-600">0</div>
@@ -62,7 +56,6 @@
             <p class="text-xl text-gray-600">Unidad 4: Lunchtime - 10 Juegos Divertidos</p>
         </header>
 
-        <!-- Menú de Navegación -->
         <nav class="bg-white p-4 rounded-2xl shadow-lg mb-12 sticky top-2 z-20">
             <h2 class="text-2xl text-center text-amber-700 mb-3">Menú de Juegos</h2>
             <div class="flex flex-wrap justify-center gap-2 md:gap-3">
@@ -229,11 +222,11 @@
         const shuffleArray = (array) => array.sort(() => 0.5 - Math.random());
 
         // --- Juego 1: Memory Game ---
+        const memoryGameBoard = document.getElementById('memory-game-board');
+        const resetMemoryGameBtn = document.getElementById('reset-memory-game');
         let flippedCards = [], matchedPairs = 0, lockBoard = false;
         function createMemoryBoard() {
-            // ... (código del juego igual)
-            const memoryGameBoard = document.getElementById('memory-game-board');
-            memoryGameBoard.innerHTML = ''; matchedPairs = 0;
+            memoryGameBoard.innerHTML = ''; matchedPairs = 0; lockBoard = false; flippedCards = [];
             const cardData = shuffleArray([...foodItems, ...foodItems]);
             cardData.forEach(item => {
                 const card = document.createElement('div');
@@ -241,7 +234,7 @@
                 card.dataset.name = item.name;
                 card.innerHTML = `<div class="card-inner"><div class="card-face card-front">?</div><div class="card-back"><span class="emoji">${item.emoji}</span><span class="font-bold">${item.name}</span></div></div>`;
                 card.addEventListener('click', () => {
-                     if (lockBoard || card.classList.contains('flipped')) return;
+                     if (lockBoard || card.classList.contains('flipped') || flippedCards.includes(card)) return;
                     card.classList.add('flipped');
                     flippedCards.push(card);
                     if (flippedCards.length === 2) {
@@ -253,7 +246,7 @@
                             matchedPairs++;
                             flippedCards = [];
                             lockBoard = false;
-                            if (matchedPairs === foodItems.length) setTimeout(() => alert('¡Felicidades!'), 500);
+                            if (matchedPairs === foodItems.length) setTimeout(() => alert('¡Felicidades! Completaste el juego de memoria.'), 500);
                         } else {
                             setTimeout(() => {
                                 c1.classList.remove('flipped'); c2.classList.remove('flipped');
@@ -265,16 +258,17 @@
                 memoryGameBoard.appendChild(card);
             });
         }
-        document.getElementById('reset-memory-game').addEventListener('click', createMemoryBoard);
+        resetMemoryGameBtn.addEventListener('click', createMemoryBoard);
 
         // --- Juego 2: Number Word Match ---
+        const numberItemDisplay = document.getElementById('number-item-display');
+        const numberOptionsContainer = document.getElementById('number-options');
+        const numberFeedback = document.getElementById('number-feedback');
         function setupNumberGame() {
-            const numberOptionsContainer = document.getElementById('number-options');
-            const numberFeedback = document.getElementById('number-feedback');
             const allNumberWords = Object.values(numberWords);
             const correctNumber = Math.floor(Math.random() * 10) + 11;
             const correctNumberWord = numberWords[correctNumber];
-            document.getElementById('number-item-display').textContent = correctNumber;
+            numberItemDisplay.textContent = correctNumber;
             numberFeedback.textContent = ''; numberFeedback.classList.add('opacity-0');
             const options = new Set([correctNumberWord]);
             while (options.size < 3) options.add(allNumberWords[Math.floor(Math.random() * allNumberWords.length)]);
@@ -296,18 +290,21 @@
         }
 
         // --- Juego 3: Have you got...? ---
+        const lunchboxContentsEl = document.getElementById('lunchbox-contents');
+        const haveGotQuestionEl = document.getElementById('have-got-question');
+        const haveGotAnswersEl = document.getElementById('have-got-answers');
+        const haveGotFeedbackEl = document.getElementById('have-got-feedback');
         function setupHaveGotGame() {
-            const haveGotFeedbackEl = document.getElementById('have-got-feedback');
+            haveGotFeedbackEl.textContent = ''; haveGotFeedbackEl.classList.add('opacity-0');
             const lunchboxItems = shuffleArray([...foodItems]).slice(0, 4);
-            document.getElementById('lunchbox-contents').innerHTML = lunchboxItems.map(item => `<span>${item.emoji}</span>`).join('');
+            lunchboxContentsEl.innerHTML = lunchboxItems.map(item => `<span>${item.emoji}</span>`).join('');
             const shouldAskAboutPresentItem = Math.random() > 0.5;
             const currentQuestionItem = shouldAskAboutPresentItem ? lunchboxItems[0] : foodItems.find(f => !lunchboxItems.includes(f));
             const isItemInLunchbox = shouldAskAboutPresentItem;
             const questionText = `Have you got ${currentQuestionItem.name}?`;
-            document.getElementById('have-got-question').textContent = questionText;
+            haveGotQuestionEl.textContent = questionText;
             speak(questionText);
             
-            const haveGotAnswersEl = document.getElementById('have-got-answers');
             haveGotAnswersEl.innerHTML = `<button data-answer="yes" class="btn bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl">Yes, I have.</button><button data-answer="no" class="btn bg-red-500 text-white font-bold py-3 px-8 rounded-full text-xl">No, I haven't.</button>`;
             haveGotAnswersEl.onclick = e => {
                 if (e.target.tagName !== 'BUTTON') return;
@@ -325,15 +322,15 @@
         }
 
         // --- Juego 4: I like / I don't like ---
+        const likeFoodItemEl = document.getElementById('like-food-item');
+        const likeGameContainer = document.querySelector('#like-game .flex');
+        const likeSentenceEl = document.getElementById('like-sentence');
         function setupLikeGame() {
-            const likeFoodItemEl = document.getElementById('like-food-item');
-            const likeSentenceEl = document.getElementById('like-sentence');
             const randomFood = foodItems[Math.floor(Math.random() * foodItems.length)];
             likeFoodItemEl.textContent = randomFood.emoji;
             likeFoodItemEl.dataset.name = randomFood.name;
             likeSentenceEl.textContent = '';
             
-            const likeGameContainer = document.querySelector('#like-game .flex');
             likeGameContainer.innerHTML = `<button data-choice="like" class="btn bg-green-400 p-4 rounded-full text-5xl transform hover:scale-110">👍</button><button data-choice="dont-like" class="btn bg-red-400 p-4 rounded-full text-5xl transform hover:scale-110">👎</button>`;
             likeGameContainer.onclick = e => {
                 const choice = e.target.closest('button')?.dataset.choice;
@@ -347,23 +344,22 @@
             };
         }
         
-        // --- El resto de los juegos se inicializan de manera similar ---
-        // Aquí iría el código completo para los juegos 5-10, con las llamadas a updateScore()
-        // Por brevedad, se omiten las funciones completas pero la lógica es la misma.
-        // Ejemplo para el juego 5:
+        // --- Juego 5: What's Missing? ---
+        const missingItemsDisplay = document.getElementById('missing-items-display');
+        const missingInstruction = document.getElementById('missing-instruction');
+        const missingOptions = document.getElementById('missing-options');
+        const missingFeedback = document.getElementById('missing-feedback');
         function setupMissingGame() {
-            const missingFeedback = document.getElementById('missing-feedback');
-            const missingOptions = document.getElementById('missing-options');
             missingFeedback.classList.add('opacity-0');
-            document.getElementById('missing-instruction').textContent = 'Look at the food...';
+            missingInstruction.textContent = 'Look at the food...';
             const itemsToShow = shuffleArray([...foodItems]).slice(0, 4);
             const missingItem = itemsToShow[Math.floor(Math.random() * itemsToShow.length)];
-            document.getElementById('missing-items-display').innerHTML = itemsToShow.map(item => `<span>${item.emoji}</span>`).join('');
+            missingItemsDisplay.innerHTML = itemsToShow.map(item => `<span>${item.emoji}</span>`).join('');
             missingOptions.innerHTML = '';
 
             setTimeout(() => {
-                document.getElementById('missing-items-display').innerHTML = itemsToShow.filter(i => i !== missingItem).map(item => `<span>${item.emoji}</span>`).join('') + '<span class="text-gray-300">?</span>';
-                document.getElementById('missing-instruction').textContent = "What's missing?";
+                missingItemsDisplay.innerHTML = itemsToShow.filter(i => i !== missingItem).map(item => `<span>${item.emoji}</span>`).join('') + '<span class="text-gray-300">?</span>';
+                missingInstruction.textContent = "What's missing?";
                 speak("What's missing?");
                 missingOptions.innerHTML = shuffleArray(itemsToShow).map(opt => `<button data-name="${opt.name}" class="btn bg-orange-500 text-white font-bold py-3 px-5 rounded-full text-lg">${opt.name}</button>`).join('');
                 
@@ -382,7 +378,155 @@
             }, 3000);
         }
 
-        // ... Y así para los demás juegos ...
+        // --- Juego 6: Listen and Click ---
+        const listenBtn = document.getElementById('listen-btn');
+        const listenOptions = document.getElementById('listen-options');
+        const listenFeedback = document.getElementById('listen-feedback');
+        function setupListenGame() {
+            listenFeedback.classList.add('opacity-0');
+            const options = shuffleArray([...foodItems]).slice(0, 6);
+            const listenCorrectItem = options[Math.floor(Math.random() * options.length)];
+            listenOptions.innerHTML = options.map(opt => `<button data-name="${opt.name}" class="btn bg-white p-4 rounded-lg shadow transform hover:scale-105"><span class="text-6xl">${opt.emoji}</span></button>`).join('');
+            
+            listenBtn.onclick = () => speak(`Click on the ${listenCorrectItem.name}`);
+            listenOptions.onclick = e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                listenFeedback.classList.remove('opacity-0');
+                if (btn.dataset.name === listenCorrectItem.name) {
+                    listenFeedback.textContent = 'Excellent! ✅'; listenFeedback.className = 'feedback text-2xl font-bold text-green-500';
+                    updateScore(15);
+                } else {
+                    listenFeedback.textContent = 'Nope! ❌'; listenFeedback.className = 'feedback text-2xl font-bold text-red-500';
+                    updateScore(-5);
+                }
+                setTimeout(setupListenGame, 1500);
+            };
+        }
+
+        // --- Juego 7: Word Scramble ---
+        const scrambleImage = document.getElementById('scramble-image');
+        const scrambleAnswer = document.getElementById('scramble-answer');
+        const scrambleLetters = document.getElementById('scramble-letters');
+        const scrambleClearBtn = document.getElementById('scramble-clear-btn');
+        const scrambleFeedback = document.getElementById('scramble-feedback');
+        function setupScrambleGame() {
+            scrambleFeedback.classList.add('opacity-0');
+            scrambleAnswer.textContent = '';
+            const item = foodItems[Math.floor(Math.random() * foodItems.length)];
+            const scrambleCorrectWord = item.name.replace(' ', '');
+            scrambleImage.textContent = item.emoji;
+            const letters = shuffleArray(scrambleCorrectWord.split(''));
+            scrambleLetters.innerHTML = letters.map(l => `<button class="btn bg-pink-500 text-white font-bold text-2xl w-12 h-12 rounded-lg">${l}</button>`).join('');
+            
+            scrambleLetters.onclick = e => {
+                if (e.target.tagName !== 'BUTTON' || e.target.disabled) return;
+                scrambleAnswer.textContent += e.target.textContent;
+                e.target.disabled = true; e.target.classList.add('opacity-50');
+                if (scrambleAnswer.textContent.length === scrambleCorrectWord.length) {
+                    if (scrambleAnswer.textContent === scrambleCorrectWord) {
+                        scrambleFeedback.classList.remove('opacity-0');
+                        scrambleFeedback.textContent = 'You got it! 👍'; scrambleFeedback.className = 'feedback text-2xl font-bold text-green-500';
+                        speak(item.name);
+                        updateScore(25);
+                        setTimeout(setupScrambleGame, 2000);
+                    } else {
+                        scrambleFeedback.classList.remove('opacity-0');
+                        scrambleFeedback.textContent = 'Not quite! ❌'; scrambleFeedback.className = 'feedback text-2xl font-bold text-red-500';
+                    }
+                }
+            };
+            scrambleClearBtn.onclick = () => {
+                scrambleAnswer.textContent = '';
+                document.querySelectorAll('#scramble-letters button').forEach(b => { b.disabled = false; b.classList.remove('opacity-50'); });
+            };
+        }
+
+        // --- Juego 8: True or False ---
+        const trueFalseImage = document.getElementById('true-false-image');
+        const trueFalseSentence = document.getElementById('true-false-sentence');
+        const trueFalseOptions = document.getElementById('true-false-options');
+        const trueFalseFeedback = document.getElementById('true-false-feedback');
+        function setupTrueFalseGame() {
+            trueFalseFeedback.classList.add('opacity-0');
+            const item1 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            let item2 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            while (item1 === item2) {
+                item2 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            }
+            const isSentenceTrue = Math.random() > 0.5;
+            trueFalseImage.textContent = item1.emoji;
+            const sentenceText = `This is ${isSentenceTrue ? item1.name : item2.name}.`;
+            trueFalseSentence.textContent = sentenceText;
+
+            trueFalseOptions.innerHTML = `<button data-answer="true" class="btn bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl">True</button><button data-answer="false" class="btn bg-red-500 text-white font-bold py-3 px-8 rounded-full text-xl">False</button>`;
+            trueFalseOptions.onclick = e => {
+                if (e.target.tagName !== 'BUTTON') return;
+                const answer = e.target.dataset.answer === 'true';
+                trueFalseFeedback.classList.remove('opacity-0');
+                if (answer === isSentenceTrue) {
+                    trueFalseFeedback.textContent = 'Correct! ✅'; trueFalseFeedback.className = 'feedback text-2xl font-bold text-green-500'; speak('Correct!');
+                    updateScore(15);
+                } else {
+                    trueFalseFeedback.textContent = 'Incorrect! ❌'; trueFalseFeedback.className = 'feedback text-2xl font-bold text-red-500'; speak('Incorrect');
+                    updateScore(-5);
+                }
+                setTimeout(setupTrueFalseGame, 1500);
+            };
+        }
+
+        // --- Juego 9: Build a Lunchbox ---
+        const buildFoodOptions = document.getElementById('build-food-options');
+        const builtLunchbox = document.getElementById('built-lunchbox');
+        const buildResetBtn = document.getElementById('build-reset-btn');
+        function setupBuildLunchboxGame() {
+            buildFoodOptions.innerHTML = foodItems.map(item => `<button data-emoji="${item.emoji}" class="btn bg-white p-2 rounded-lg shadow transform hover:scale-105"><span class="text-4xl">${item.emoji}</span></button>`).join('');
+            buildFoodOptions.onclick = e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const emojiSpan = document.createElement('span');
+                emojiSpan.textContent = btn.dataset.emoji;
+                builtLunchbox.appendChild(emojiSpan);
+            };
+            buildResetBtn.onclick = () => builtLunchbox.innerHTML = '';
+        }
+
+        // --- Juego 10: Sentence Maker ---
+        const sentenceMakerImage = document.getElementById('sentence-maker-image');
+        const sentenceMakerAnswer = document.getElementById('sentence-maker-answer');
+        const sentenceMakerWords = document.getElementById('sentence-maker-words');
+        const sentenceMakerFeedback = document.getElementById('sentence-maker-feedback');
+        function setupSentenceMakerGame() {
+            sentenceMakerFeedback.classList.add('opacity-0');
+            sentenceMakerAnswer.textContent = '';
+            let sentenceCurrentArray = [];
+            const item = foodItems[Math.floor(Math.random() * foodItems.length)];
+            const likes = Math.random() > 0.5;
+            sentenceMakerImage.textContent = item.emoji;
+            const sentenceCorrectArray = likes ? ['I', 'like', item.name] : ['I', "don't", 'like', item.name];
+            const wordOptions = shuffleArray([...sentenceCorrectArray]);
+            sentenceMakerWords.innerHTML = wordOptions.map(w => `<button class="btn bg-cyan-500 text-white font-bold py-2 px-4 rounded-lg text-xl">${w}</button>`).join('');
+            
+            sentenceMakerWords.onclick = e => {
+                if (e.target.tagName !== 'BUTTON' || e.target.disabled) return;
+                const word = e.target.textContent;
+                sentenceCurrentArray.push(word);
+                sentenceMakerAnswer.textContent = sentenceCurrentArray.join(' ');
+                e.target.disabled = true; e.target.classList.add('opacity-50');
+                if (sentenceCurrentArray.length === sentenceCorrectArray.length) {
+                    sentenceMakerFeedback.classList.remove('opacity-0');
+                    if (sentenceCurrentArray.join(' ') === sentenceCorrectArray.join(' ')) {
+                        sentenceMakerFeedback.textContent = 'Perfect! 🎉'; sentenceMakerFeedback.className = 'feedback text-2xl font-bold text-green-500';
+                        speak(sentenceCorrectArray.join(' '));
+                        updateScore(25);
+                    } else {
+                        sentenceMakerFeedback.textContent = 'Not quite! ❌'; sentenceMakerFeedback.className = 'feedback text-2xl font-bold text-red-500';
+                        updateScore(-10);
+                    }
+                    setTimeout(setupSentenceMakerGame, 2500);
+                }
+            };
+        }
 
         // --- Inicializar todos los juegos ---
         createMemoryBoard();
@@ -390,15 +534,12 @@
         setupHaveGotGame();
         setupLikeGame();
         setupMissingGame();
-        // setupListenGame(); // Llamadas a las funciones de setup de los demás juegos
-        // setupScrambleGame();
-        // setupTrueFalseGame();
-        // setupBuildLunchboxGame();
-        // setupSentenceMakerGame();
+        setupListenGame();
+        setupScrambleGame();
+        setupTrueFalseGame();
+        setupBuildLunchboxGame();
+        setupSentenceMakerGame();
     });
-    // NOTA: El código completo de los juegos 6-10 se ha omitido aquí para ser conciso,
-    // pero está en la lógica de la página para funcionar correctamente.
-    // La implementación sigue el mismo patrón que los juegos 1-5.
     </script>
 </body>
 </html>
