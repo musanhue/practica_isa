@@ -17,7 +17,7 @@
         .game-card { perspective: 1000px; }
         .card-inner { position: relative; width: 100%; height: 100%; transition: transform 0.6s, opacity 0.5s; transform-style: preserve-3d; }
         .game-card.flipped .card-inner { transform: rotateY(180deg); }
-        .game-card.matched .card-inner { opacity: 0; } /* Tarjetas adivinadas se ocultan */
+        .game-card.matched .card-inner { opacity: 0; pointer-events: none; } /* Tarjetas adivinadas se ocultan */
         .card-face { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; display: flex; justify-content: center; align-items: center; border-radius: 1rem; }
         .card-front { background-color: #FBBF24; color: white; font-size: 3rem; }
         .card-back { background-color: #A7F3D0; color: #1F2937; transform: rotateY(180deg); font-size: 1.25rem; flex-direction: column; padding: 0.5rem; text-align: center; }
@@ -63,7 +63,7 @@
         <nav class="bg-white p-4 rounded-2xl shadow-lg mb-12 sticky top-2 z-20">
             <h2 class="text-2xl text-center text-amber-700 mb-3">Menú de Juegos</h2>
             <div class="flex flex-wrap justify-center gap-2 md:gap-3">
-                 <a href="#game1" class="nav-link text-sm md:text-base bg-emerald-100 text-emerald-800 py-2 px-3 rounded-full hover:bg-emerald-200">1. Memoria Comida</a>
+                <a href="#game1" class="nav-link text-sm md:text-base bg-emerald-100 text-emerald-800 py-2 px-3 rounded-full hover:bg-emerald-200">1. Memoria Comida</a>
                 <a href="#game2" class="nav-link text-sm md:text-base bg-sky-100 text-sky-800 py-2 px-3 rounded-full hover:bg-sky-200">2. Escribe Números</a>
                 <a href="#game3" class="nav-link text-sm md:text-base bg-purple-100 text-purple-800 py-2 px-3 rounded-full hover:bg-purple-200">3. Have you got?</a>
                 <a href="#game4" class="nav-link text-sm md:text-base bg-rose-100 text-rose-800 py-2 px-3 rounded-full hover:bg-rose-200">4. I like...</a>
@@ -79,7 +79,6 @@
         </nav>
 
         <main class="space-y-16">
-            <!-- Los contenedores de los juegos se dejan vacíos y se llenan con JS -->
             <section id="game1" class="bg-white p-6 rounded-2xl shadow-lg"></section>
             <section id="game2" class="bg-white p-6 rounded-2xl shadow-lg"></section>
             <section id="game3" class="bg-white p-6 rounded-2xl shadow-lg"></section>
@@ -170,7 +169,7 @@
             const container = document.getElementById('game1');
             container.innerHTML = `
                 <h2 class="text-3xl text-emerald-600 mb-4 text-center">1. Vocabulary: Memory Game 🧠 (+15 pts/par)</h2>
-                <div id="memory-game-board" class="grid grid-cols-4 sm:grid-cols-6 gap-3 md:gap-4"></div>
+                <div id="memory-game-board" class="grid grid-cols-4 sm:grid-cols-6 gap-3 md:gap-4 min-h-[240px]"></div>
                 <div class="text-center mt-6"><button id="reset-memory-game" class="btn bg-emerald-500 text-white font-bold py-2 px-6 rounded-full text-lg">Reiniciar</button></div>
             `;
             const board = container.querySelector('#memory-game-board');
@@ -183,7 +182,7 @@
                 card.dataset.name = item.name;
                 card.innerHTML = `<div class="card-inner"><div class="card-face card-front">?</div><div class="card-back"><span class="emoji">${item.emoji}</span><span class="font-bold">${item.name}</span></div></div>`;
                 card.addEventListener('click', () => {
-                    if (lockBoard || card.classList.contains('flipped')) return;
+                    if (lockBoard || card.classList.contains('flipped') || card.classList.contains('matched')) return;
                     card.classList.add('flipped');
                     flippedCards.push(card);
                     if (flippedCards.length === 2) {
@@ -250,6 +249,156 @@
             });
         }
         
+        // --- Juego 3: Have you got...? ---
+        function setupHaveGotGame() {
+            const container = document.getElementById('game3');
+            const lunchboxItems = shuffleArray([...foodItems]).slice(0, 4);
+            const shouldAskAboutPresentItem = Math.random() > 0.5;
+            const currentQuestionItem = shouldAskAboutPresentItem ? lunchboxItems[0] : foodItems.find(f => !lunchboxItems.includes(f));
+            const isItemInLunchbox = shouldAskAboutPresentItem;
+            const questionText = `Have you got ${currentQuestionItem.name}?`;
+
+            container.innerHTML = `
+                <h2 class="text-3xl text-purple-600 mb-4 text-center">3. Grammar: Have you got...? 🥪 (+15 / -5 pts)</h2>
+                <div class="text-center bg-purple-100 p-6 rounded-xl">
+                    <p class="text-lg mb-2">In my lunchbox, I have got:</p>
+                    <div class="text-5xl mb-4 flex justify-center gap-4">${lunchboxItems.map(item => `<span>${item.emoji}</span>`).join('')}</div>
+                    <p class="text-2xl font-bold my-6 h-8">${questionText}</p>
+                    <div class="have-got-answers flex justify-center gap-4">
+                        <button data-answer="yes" class="btn bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl">Yes, I have.</button>
+                        <button data-answer="no" class="btn bg-red-500 text-white font-bold py-3 px-8 rounded-full text-xl">No, I haven't.</button>
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
+            speak(questionText);
+            
+            container.querySelector('.have-got-answers').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const answer = btn.dataset.answer === 'yes';
+                const feedbackEl = container.querySelector('.feedback');
+                feedbackEl.classList.remove('opacity-0');
+                if (answer === isItemInLunchbox) {
+                    feedbackEl.textContent = 'Correct! ✅'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500'; speak('Correct!');
+                    updateScore(15);
+                } else {
+                    feedbackEl.textContent = 'Incorrect! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500'; speak('Incorrect');
+                    updateScore(-5);
+                }
+                setTimeout(setupHaveGotGame, 2000);
+            });
+        }
+        
+        // --- Juego 4: I like / I don't like ---
+        function setupLikeGame() {
+            const container = document.getElementById('game4');
+            const randomFood = foodItems[Math.floor(Math.random() * foodItems.length)];
+
+            container.innerHTML = `
+                <h2 class="text-3xl text-rose-600 mb-4 text-center">4. Grammar: I like / I don't like 👍👎 (+5 pts)</h2>
+                <div class="text-center bg-rose-100 p-6 rounded-xl">
+                    <div class="like-food-item text-7xl mb-6">${randomFood.emoji}</div>
+                    <div class="like-options flex justify-center gap-6">
+                        <button data-choice="like" class="btn bg-green-400 p-4 rounded-full text-5xl transform hover:scale-110">👍</button>
+                        <button data-choice="dont-like" class="btn bg-red-400 p-4 rounded-full text-5xl transform hover:scale-110">👎</button>
+                    </div>
+                    <p class="like-sentence mt-6 text-2xl font-bold h-8"></p>
+                </div>
+            `;
+
+            container.querySelector('.like-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const choice = btn.dataset.choice;
+                const sentence = (choice === 'like') ? `I like ${randomFood.name}.` : `I don't like ${randomFood.name}.`;
+                container.querySelector('.like-sentence').textContent = sentence;
+                speak(sentence);
+                updateScore(5);
+                setTimeout(setupLikeGame, 2500);
+            });
+        }
+        
+        // --- Juego 5: What's Missing? ---
+        function setupMissingGame() {
+            const container = document.getElementById('game5');
+            container.innerHTML = `
+                <h2 class="text-3xl text-orange-600 mb-4 text-center">5. Memory: What's Missing? 🧐 (+25 / -10 pts)</h2>
+                <div class="text-center bg-orange-100 p-6 rounded-xl">
+                    <div class="missing-items-display flex justify-center items-center gap-4 text-6xl min-h-[80px]"></div>
+                    <p class="missing-instruction text-xl font-bold my-4"></p>
+                    <div class="missing-options flex flex-wrap justify-center gap-4"></div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
+            const displayEl = container.querySelector('.missing-items-display');
+            const instructionEl = container.querySelector('.missing-instruction');
+            const optionsEl = container.querySelector('.missing-options');
+            const feedbackEl = container.querySelector('.feedback');
+            
+            feedbackEl.classList.add('opacity-0');
+            instructionEl.textContent = 'Look at the food...';
+            const itemsToShow = shuffleArray([...foodItems]).slice(0, 4);
+            const missingItem = itemsToShow[Math.floor(Math.random() * itemsToShow.length)];
+            displayEl.innerHTML = itemsToShow.map(item => `<span>${item.emoji}</span>`).join('');
+            optionsEl.innerHTML = '';
+
+            setTimeout(() => {
+                displayEl.innerHTML = itemsToShow.filter(i => i !== missingItem).map(item => `<span>${item.emoji}</span>`).join('') + '<span class="text-gray-300">?</span>';
+                instructionEl.textContent = "What's missing?";
+                speak("What's missing?");
+                optionsEl.innerHTML = shuffleArray(itemsToShow).map(opt => `<button data-name="${opt.name}" class="btn bg-orange-500 text-white font-bold py-3 px-5 rounded-full text-lg">${opt.name}</button>`).join('');
+                
+                optionsEl.onclick = e => {
+                    const btn = e.target.closest('button');
+                    if (!btn) return;
+                    feedbackEl.classList.remove('opacity-0');
+                    if (btn.dataset.name === missingItem.name) {
+                        feedbackEl.textContent = 'Correct! 🎉'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500'; speak(`Yes, ${missingItem.name} was missing.`);
+                        updateScore(25);
+                    } else {
+                        feedbackEl.textContent = 'Try again! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500';
+                        updateScore(-10);
+                    }
+                    setTimeout(setupMissingGame, 2000);
+                };
+            }, 3000);
+        }
+
+        // --- Juego 6: Listen and Click ---
+        function setupListenGame() {
+            const container = document.getElementById('game6');
+            const options = shuffleArray([...foodItems]).slice(0, 6);
+            const correctItem = options[Math.floor(Math.random() * options.length)];
+            
+            container.innerHTML = `
+                <h2 class="text-3xl text-teal-600 mb-4 text-center">6. Listening: Listen and Click 🎧 (+15 / -5 pts)</h2>
+                <div class="text-center bg-teal-100 p-6 rounded-xl">
+                    <button class="listen-btn btn bg-teal-500 text-white font-bold py-3 px-5 rounded-full text-lg mb-6">Listen</button>
+                    <div class="listen-options grid grid-cols-3 gap-4">
+                        ${options.map(opt => `<button data-name="${opt.name}" class="btn bg-white p-4 rounded-lg shadow transform hover:scale-105"><span class="text-6xl">${opt.emoji}</span></button>`).join('')}
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
+
+            container.querySelector('.listen-btn').addEventListener('click', () => speak(`Click on the ${correctItem.name}`));
+            container.querySelector('.listen-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const feedbackEl = container.querySelector('.feedback');
+                feedbackEl.classList.remove('opacity-0');
+                if (btn.dataset.name === correctItem.name) {
+                    feedbackEl.textContent = 'Excellent! ✅'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500';
+                    updateScore(15);
+                } else {
+                    feedbackEl.textContent = 'Nope! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500';
+                    updateScore(-5);
+                }
+                setTimeout(setupListenGame, 1500);
+            });
+        }
+
         // --- Juego 7: Word Scramble (Actualizado) ---
         function setupScrambleGame() {
             const container = document.getElementById('game7');
@@ -283,12 +432,17 @@
                 answerEl.textContent += btn.textContent;
                 btn.disabled = true;
                 btn.classList.add('opacity-50');
-                if (answerEl.textContent === correctWord) {
-                    feedbackEl.classList.remove('opacity-0');
-                    feedbackEl.textContent = 'You got it! 👍'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500';
-                    speak(correctWord);
-                    updateScore(25);
-                    setTimeout(setupScrambleGame, 2000);
+                if (answerEl.textContent.length === correctWord.length) {
+                    if (answerEl.textContent === correctWord) {
+                        feedbackEl.classList.remove('opacity-0');
+                        feedbackEl.textContent = 'You got it! 👍'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500';
+                        speak(correctWord);
+                        updateScore(25);
+                        setTimeout(setupScrambleGame, 2000);
+                    } else {
+                       feedbackEl.classList.remove('opacity-0');
+                       feedbackEl.textContent = 'Not quite! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500';
+                    }
                 }
             });
 
@@ -300,19 +454,241 @@
                 });
             });
         }
+        
+        // --- Juego 8: True or False ---
+        function setupTrueFalseGame() {
+            const container = document.getElementById('game8');
+            const item1 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            let item2 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            while (item1 === item2) {
+                item2 = foodItems[Math.floor(Math.random() * foodItems.length)];
+            }
+            const isSentenceTrue = Math.random() > 0.5;
+            const sentenceText = `This is ${isSentenceTrue ? item1.name : item2.name}.`;
 
-        // --- Aquí irían las demás funciones de setup (3, 4, 5, 6, 8, 9, 10, 11, 12) ---
-        // Por brevedad, se omite el código completo, pero la estructura es la misma:
-        // 1. Seleccionar el contenedor del juego por ID.
-        // 2. Generar el HTML interno del juego.
-        // 3. Añadir los event listeners para la lógica del juego.
-        // 4. Llamar a updateScore() cuando sea necesario.
-        // 5. Llamarse a sí misma de nuevo para reiniciar el juego.
+            container.innerHTML = `
+                <h2 class="text-3xl text-indigo-600 mb-4 text-center">8. Reading: True or False? ❓ (+15 / -5 pts)</h2>
+                <div class="text-center bg-indigo-100 p-6 rounded-xl">
+                    <div class="text-7xl mb-4">${item1.emoji}</div>
+                    <p class="text-2xl font-bold mb-6 h-8">${sentenceText}</p>
+                    <div class="true-false-options flex justify-center gap-4">
+                        <button data-answer="true" class="btn bg-green-500 text-white font-bold py-3 px-8 rounded-full text-xl">True</button>
+                        <button data-answer="false" class="btn bg-red-500 text-white font-bold py-3 px-8 rounded-full text-xl">False</button>
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
 
-        // --- Llamada al inicializador principal ---
+            container.querySelector('.true-false-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const answer = btn.dataset.answer === 'true';
+                const feedbackEl = container.querySelector('.feedback');
+                feedbackEl.classList.remove('opacity-0');
+                if (answer === isSentenceTrue) {
+                    feedbackEl.textContent = 'Correct! ✅'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500'; speak('Correct!');
+                    updateScore(15);
+                } else {
+                    feedbackEl.textContent = 'Incorrect! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500'; speak('Incorrect');
+                    updateScore(-5);
+                }
+                setTimeout(setupTrueFalseGame, 1500);
+            });
+        }
+        
+        // --- Juego 9: What's the Weather? ---
+        function setupWeatherGame() {
+            const container = document.getElementById('game9');
+            const correctItem = weatherItems[Math.floor(Math.random() * weatherItems.length)];
+            const options = new Set([correctItem.name]);
+            while (options.size < 3) {
+                options.add(weatherItems[Math.floor(Math.random() * weatherItems.length)].name);
+            }
+
+            container.innerHTML = `
+                <h2 class="text-3xl text-yellow-600 mb-4 text-center">9. Vocabulary: What's the Weather? ☀️ (+15 / -5 pts)</h2>
+                <div class="text-center bg-yellow-100 p-6 rounded-xl">
+                    <div class="text-7xl mb-4">${correctItem.emoji}</div>
+                    <div class="weather-options flex flex-wrap justify-center gap-4">
+                        ${shuffleArray(Array.from(options)).map(opt => `<button data-name="${opt}" class="btn bg-yellow-500 text-white font-bold py-3 px-5 rounded-full text-lg">${opt}</button>`).join('')}
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
+
+            container.querySelector('.weather-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const feedbackEl = container.querySelector('.feedback');
+                feedbackEl.classList.remove('opacity-0');
+                if (btn.dataset.name === correctItem.name) {
+                    feedbackEl.textContent = 'Correct! 🎉'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500';
+                    speak(correctItem.name);
+                    updateScore(15);
+                    setTimeout(setupWeatherGame, 1500);
+                } else {
+                    feedbackEl.textContent = 'Try again! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500';
+                    updateScore(-5);
+                }
+            });
+        }
+
+        // --- Juego 10: How are you feeling? ---
+        function setupFeelingsGame() {
+            const container = document.getElementById('game10');
+            const correctItem = feelingItems[Math.floor(Math.random() * feelingItems.length)];
+            const options = new Set([correctItem.name]);
+            while (options.size < 3) {
+                options.add(feelingItems[Math.floor(Math.random() * feelingItems.length)].name);
+            }
+
+            container.innerHTML = `
+                <h2 class="text-3xl text-red-600 mb-4 text-center">10. Vocabulary: How are you feeling? 😊 (+15 / -5 pts)</h2>
+                <div class="text-center bg-red-100 p-6 rounded-xl">
+                    <div class="text-7xl mb-4">${correctItem.emoji}</div>
+                    <div class="feelings-options flex flex-wrap justify-center gap-4">
+                        ${shuffleArray(Array.from(options)).map(opt => `<button data-name="${opt}" class="btn bg-red-500 text-white font-bold py-3 px-5 rounded-full text-lg">${opt}</button>`).join('')}
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold"></div>
+                </div>
+            `;
+
+            container.querySelector('.feelings-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const feedbackEl = container.querySelector('.feedback');
+                feedbackEl.classList.remove('opacity-0');
+                if (btn.dataset.name === correctItem.name) {
+                    feedbackEl.textContent = 'Correct! 🎉'; feedbackEl.className = 'feedback text-2xl font-bold text-green-500';
+                    speak(correctItem.name);
+                    updateScore(15);
+                    setTimeout(setupFeelingsGame, 1500);
+                } else {
+                    feedbackEl.textContent = 'Try again! ❌'; feedbackEl.className = 'feedback text-2xl font-bold text-red-500';
+                    updateScore(-5);
+                }
+            });
+        }
+        
+        // --- Juego 11: Build a Lunchbox ---
+        function setupBuildLunchboxGame() {
+            const container = document.getElementById('game11');
+            container.innerHTML = `
+                <h2 class="text-3xl text-lime-600 mb-4 text-center">11. Creative: Build a Lunchbox 🍎🍌 (Sin Puntos)</h2>
+                <div class="md:flex gap-6 bg-lime-100 p-6 rounded-xl">
+                    <div class="flex-1 mb-6 md:mb-0">
+                        <h3 class="text-xl font-bold text-center mb-2">Click to add food:</h3>
+                        <div class="build-food-options grid grid-cols-4 sm:grid-cols-5 gap-2">
+                            ${foodItems.map(item => `<button data-emoji="${item.emoji}" class="btn bg-white p-2 rounded-lg shadow transform hover:scale-105"><span class="text-4xl">${item.emoji}</span></button>`).join('')}
+                        </div>
+                    </div>
+                    <div class="flex-1 bg-white rounded-lg p-4 border-2 border-lime-300">
+                        <h3 class="text-xl font-bold text-center mb-2">My Lunchbox:</h3>
+                        <div class="built-lunchbox flex flex-wrap gap-2 text-5xl min-h-[60px]"></div>
+                        <button class="build-reset-btn btn bg-lime-500 text-white font-bold py-2 px-4 rounded-full mt-4 w-full">Clear Lunchbox</button>
+                    </div>
+                </div>
+            `;
+            const lunchbox = container.querySelector('.built-lunchbox');
+            container.querySelector('.build-food-options').addEventListener('click', e => {
+                const btn = e.target.closest('button');
+                if (!btn) return;
+                const emojiSpan = document.createElement('span');
+                emojiSpan.textContent = btn.dataset.emoji;
+                lunchbox.appendChild(emojiSpan);
+            });
+            container.querySelector('.build-reset-btn').addEventListener('click', () => {
+                lunchbox.innerHTML = '';
+            });
+        }
+        
+        // --- Juego 12: Match the Sentence ---
+        function setupSentenceMatchGame() {
+            const container = document.getElementById('game12');
+            const sentences = [
+                { id: 1, text: "I like pizza and peas.", img: "🍕🫛" },
+                { id: 2, text: "I like sausages and carrots.", img: "🌭🥕" },
+                { id: 3, text: "I don't like bananas or milk.", img: "🍌🥛" },
+                { id: 4, text: "I like sausages and peas.", img: "🌭🫛" }
+            ];
+            const gameData = shuffleArray(sentences).slice(0, 2);
+            let matchedPairs = 0;
+
+            container.innerHTML = `
+                <h2 class="text-3xl text-cyan-600 mb-4 text-center">12. Reading: Match the Sentence 📖 (+20 pts/par)</h2>
+                <div class="bg-cyan-100 p-6 rounded-xl">
+                    <p class="text-center mb-4 font-bold">Arrastra la frase correcta a cada imagen.</p>
+                    <div class="sentence-match-container grid md:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            ${gameData.map(s => `<div class="p-3 bg-white rounded-lg shadow-sm text-center text-lg font-bold draggable" draggable="true" data-id="${s.id}">${s.text}</div>`).join('')}
+                        </div>
+                        <div class="space-y-4">
+                            ${shuffleArray(gameData).map(s => `<div class="p-6 h-24 flex justify-center items-center text-5xl bg-cyan-50 rounded-lg drop-target" data-id="${s.id}">${s.img}</div>`).join('')}
+                        </div>
+                    </div>
+                    <div class="feedback opacity-0 transform scale-90 mt-4 h-8 text-2xl font-bold text-center"></div>
+                </div>
+            `;
+            
+            let draggedItem = null;
+            const matchContainer = container.querySelector('.sentence-match-container');
+            const feedbackEl = container.querySelector('.feedback');
+
+            matchContainer.addEventListener('dragstart', e => {
+                if (e.target.classList.contains('draggable')) {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.classList.add('opacity-50'), 0);
+                }
+            });
+            matchContainer.addEventListener('dragend', e => {
+                if (draggedItem) {
+                    draggedItem.classList.remove('opacity-50');
+                    draggedItem = null;
+                }
+            });
+            matchContainer.addEventListener('dragover', e => {
+                e.preventDefault();
+                const dropTarget = e.target.closest('.drop-target');
+                if (dropTarget) {
+                    dropTarget.classList.add('over');
+                }
+            });
+            matchContainer.addEventListener('dragleave', e => {
+                const dropTarget = e.target.closest('.drop-target');
+                if (dropTarget) {
+                    dropTarget.classList.remove('over');
+                }
+            });
+            matchContainer.addEventListener('drop', e => {
+                e.preventDefault();
+                const dropTarget = e.target.closest('.drop-target');
+                if (dropTarget && draggedItem) {
+                    dropTarget.classList.remove('over');
+                    if (draggedItem.dataset.id === dropTarget.dataset.id) {
+                        dropTarget.innerHTML = `<span class="text-green-500 text-2xl">✓ Correct!</span>`;
+                        draggedItem.style.display = 'none';
+                        updateScore(20);
+                        matchedPairs++;
+                        if (matchedPairs === gameData.length) {
+                           feedbackEl.textContent = '¡Todo correcto!';
+                           feedbackEl.classList.remove('opacity-0');
+                           setTimeout(setupSentenceMatchGame, 2000);
+                        }
+                    } else {
+                        updateScore(-10);
+                        feedbackEl.textContent = '¡Ese no es el lugar!';
+                        feedbackEl.className = "feedback text-2xl font-bold text-red-500";
+                        feedbackEl.classList.remove('opacity-0');
+                        setTimeout(() => feedbackEl.classList.add('opacity-0'), 1500);
+                    }
+                }
+            });
+        }
+
+        // --- Inicializar todos los juegos ---
         init();
     });
     </script>
 </body>
 </html>
-```</immersive>
+
