@@ -265,12 +265,40 @@
             let score = 0;
             const scoreValueEl = document.getElementById('score-value');
             
-            const synth = new Tone.Synth().toDestination();
+            // --- Audio Initialization ---
+            // We will initialize audio on the first user interaction to comply with browser policies.
+            let synth;
+            let audioReady = false;
+
+            async function initializeAudio() {
+                // This function runs only once on the first click/tap.
+                if (audioReady) return;
+                try {
+                    await Tone.start();
+                    synth = new Tone.Synth().toDestination();
+                    audioReady = true;
+                    console.log("Audio is ready!");
+                    // Remove the event listeners after initialization
+                    document.body.removeEventListener('click', initializeAudio);
+                    document.body.removeEventListener('touchstart', initializeAudio);
+                } catch (e) {
+                    console.error("Could not start audio context", e);
+                }
+            }
+
+            // Listen for the first interaction to start the audio
+            document.body.addEventListener('click', initializeAudio);
+            document.body.addEventListener('touchstart', initializeAudio);
+
             const correctSound = () => {
+                if (!audioReady) return;
                 synth.triggerAttackRelease("C5", "8n", Tone.now());
                 synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
             }
-            const incorrectSound = () => { synth.triggerAttackRelease("C3", "8n"); }
+            const incorrectSound = () => { 
+                if (!audioReady) return;
+                synth.triggerAttackRelease("C3", "8n"); 
+            }
 
             function updateScore(points) {
                 score += points;
