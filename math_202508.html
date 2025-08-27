@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juegos de Matemáticas para Niños</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+            padding-top: 80px; /* Space for the fixed header */
+        }
+        h1, h2, h3 {
+            font-family: 'Fredoka One', cursive;
+        }
+        .score-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            z-index: 50;
+            padding: 1rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .score-display {
+            background-color: #fbbf24; /* amber-400 */
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .game-card {
+            background-color: white;
+            border-radius: 2rem;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.3s ease;
+            border: 4px solid transparent;
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+        .nav-button.active {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0,0,0,0.1);
+            background-color: #fef08a; /* yellow-200 */
+            border-color: #fbbf24; /* amber-400 */
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0,0,0,0.15);
+        }
+        .btn-primary { background-color: #38bdf8; color: white; }
+        .btn-secondary { background-color: #fb923c; color: white; }
+        .feedback { font-size: 1.5rem; font-weight: bold; padding: 1rem; border-radius: 1rem; margin-top: 1rem; text-align: center; }
+        .feedback.correct { background-color: #dcfce7; color: #16a34a; }
+        .feedback.incorrect { background-color: #fee2e2; color: #dc2626; }
+        input[type="number"] { border-radius: 0.5rem; border: 2px solid #cbd5e1; padding: 0.5rem; text-align: center; font-size: 1.5rem; width: 80px; }
+        .tens-block { background-color: #60a5fa; width: 30px; height: 120px; margin: 5px; border-radius: 5px; display: flex; flex-direction: column; justify-content: space-around; padding: 5px 0; }
+        .ones-block { background-color: #facc15; width: 30px; height: 30px; margin: 5px; border-radius: 5px; }
+        .block-line { height: 2px; background: #3b82f6; width: 80%; margin: 0 auto; }
+        .hundreds-chart { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; max-w-sm mx-auto; }
+        .chart-cell { width: 32px; height: 32px; display: flex; justify-content: center; align-items: center; background-color: #e0f2fe; border-radius: 4px; cursor: pointer; transition: background-color 0.2s; }
+        .chart-cell:hover { background-color: #bae6fd; }
+    </style>
+</head>
+<body class="p-4">
+    <header class="score-header">
+        <div class="score-display">
+            ⭐ Score: <span id="score-value">0</span>
+        </div>
+    </header>
+
+    <div class="w-full max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-5xl md:text-6xl text-sky-600">Math Practice Fun!</h1>
+            <p class="text-slate-500 text-lg mt-2">Let's get ready for the test!</p>
+        </header>
+
+        <nav class="grid grid-cols-3 sm:grid-cols-5 gap-2 md:gap-4 mb-8">
+            <button class="nav-button bg-white p-2 rounded-xl active" data-game="tens">
+                <span class="text-2xl">🔟</span><span class="hidden sm:inline"> Tens & Ones</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="counting">
+                <span class="text-2xl">🔢</span><span class="hidden sm:inline"> Sequences</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="forward-backward">
+                <span class="text-2xl">🐾</span><span class="hidden sm:inline"> Steps</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="place-value">
+                <span class="text-2xl">🧐</span><span class="hidden sm:inline"> Place Value</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="compose">
+                <span class="text-2xl">➕</span><span class="hidden sm:inline"> Compose</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="decompose">
+                <span class="text-2xl">↔️</span><span class="hidden sm:inline"> Decompose</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="hundreds-chart">
+                <span class="text-2xl">▦</span><span class="hidden sm:inline"> Find Number</span>
+            </button>
+            <button class="nav-button bg-white p-2 rounded-xl" data-game="greater-less">
+                <span class="text-2xl">🐘</span><span class="hidden sm:inline"> Compare</span>
+            </button>
+             <button class="nav-button bg-white p-2 rounded-xl" data-game="what-number">
+                <span class="text-2xl">❓</span><span class="hidden sm:inline"> What Number?</span>
+            </button>
+             <button class="nav-button bg-white p-2 rounded-xl" data-game="counting-ones">
+                <span class="text-2xl">🚶</span><span class="hidden sm:inline"> Count by 1s</span>
+            </button>
+        </nav>
+
+        <main id="game-container">
+            <!-- Game 1: Tens & Ones -->
+            <section id="game-tens" class="game-card">
+                <h2 class="text-3xl text-center text-blue-500 mb-4">Game 1: Tens & Ones</h2>
+                <p class="text-center text-slate-600 mb-6">What number is this? Count the tens and ones.</p>
+                <div class="flex flex-col md:flex-row items-center justify-center gap-8">
+                    <div id="blocks-container" class="flex flex-wrap justify-center items-start min-h-[150px]"></div>
+                    <div class="flex flex-col items-center gap-4">
+                        <div class="flex items-center gap-4">
+                            <div><label for="tens-input" class="block text-center font-semibold text-slate-500">Tens</label><input type="number" id="tens-input" min="0" max="9"></div>
+                            <div><label for="ones-input" class="block text-center font-semibold text-slate-500">Ones</label><input type="number" id="ones-input" min="0" max="9"></div>
+                        </div>
+                        <div class="text-4xl font-bold text-slate-700">= <span id="total-number-display">?</span></div>
+                    </div>
+                </div>
+                <div class="text-center mt-6"><button id="check-tens-btn" class="btn btn-primary">Check</button><button id="next-tens-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-tens" class="feedback hidden"></div>
+            </section>
+
+            <!-- Game 2: Counting Sequences -->
+            <section id="game-counting" class="game-card hidden">
+                <h2 class="text-3xl text-center text-orange-500 mb-4">Game 2: Counting Sequences</h2>
+                <p id="counting-instruction" class="text-center text-slate-600 mb-6">Fill in the missing numbers.</p>
+                <div id="sequence-container" class="flex justify-center items-center gap-2 md:gap-4 flex-wrap my-8"></div>
+                <div class="text-center mt-6"><button id="check-counting-btn" class="btn btn-primary">Check</button><button id="next-counting-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-counting" class="feedback hidden"></div>
+            </section>
+            
+            <!-- Game 3: Forward & Backward -->
+            <section id="game-forward-backward" class="game-card hidden">
+                <h2 class="text-3xl text-center text-green-500 mb-4">Game 3: Forward & Backward Steps</h2>
+                <p class="text-center text-slate-600 mb-6">What number do you land on?</p>
+                <div class="flex flex-col items-center gap-4 my-8">
+                     <div class="bg-yellow-100 p-6 rounded-2xl text-center">
+                        <p class="text-xl text-slate-700">Start at</p><p id="fb-start-number" class="text-7xl font-bold text-yellow-600">58</p><p id="fb-steps" class="text-2xl font-semibold text-yellow-800 mt-2">Go 3 steps forward</p>
+                    </div>
+                    <input type="number" id="fb-input" class="mt-4 text-3xl w-32" placeholder="?">
+                </div>
+                <div class="text-center mt-6"><button id="check-fb-btn" class="btn btn-primary">Check</button><button id="next-fb-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-fb" class="feedback hidden"></div>
+            </section>
+            
+            <!-- Game 4: Place Value -->
+            <section id="game-place-value" class="game-card hidden">
+                <h2 class="text-3xl text-center text-purple-500 mb-4">Game 4: Place Value</h2>
+                <p id="pv-instruction" class="text-center text-slate-600 mb-6">What is the value of the highlighted digit?</p>
+                <div class="text-center my-8"><p id="pv-number" class="text-8xl font-bold text-slate-700"></p></div>
+                <div class="flex justify-center"><input type="number" id="pv-input" class="text-3xl w-32" placeholder="?"></div>
+                <div class="text-center mt-6"><button id="check-pv-btn" class="btn btn-primary">Check</button><button id="next-pv-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-pv" class="feedback hidden"></div>
+            </section>
+            
+            <!-- Game 5: Compose Number -->
+            <section id="game-compose" class="game-card hidden">
+                <h2 class="text-3xl text-center text-pink-500 mb-4">Game 5: Make a Number</h2>
+                <div class="flex justify-center items-center gap-4 my-8 text-4xl font-bold text-slate-600">
+                    <div id="compose-part1" class="bg-blue-100 p-6 rounded-xl">10</div>
+                    <span>and</span>
+                    <div id="compose-part2" class="bg-yellow-100 p-6 rounded-xl">7</div>
+                    <span>is...</span>
+                </div>
+                 <div class="flex justify-center"><input type="number" id="compose-input" class="text-3xl w-32" placeholder="?"></div>
+                <div class="text-center mt-6"><button id="check-compose-btn" class="btn btn-primary">Check</button><button id="next-compose-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-compose" class="feedback hidden"></div>
+            </section>
+            
+            <!-- Game 6: Decompose Number -->
+            <section id="game-decompose" class="game-card hidden">
+                <h2 class="text-3xl text-center text-teal-500 mb-4">Game 6: Break a Number</h2>
+                <p class="text-center text-slate-600 mb-6">Break the number into tens and ones.</p>
+                <div class="flex justify-center items-center gap-4 my-8 text-4xl font-bold text-slate-600">
+                    <div id="decompose-number" class="bg-green-100 p-8 rounded-xl text-6xl">25</div>
+                    <span>=</span>
+                    <input type="number" id="decompose-tens" class="w-24" placeholder="tens">
+                    <span>and</span>
+                    <input type="number" id="decompose-ones" class="w-24" placeholder="ones">
+                </div>
+                <div class="text-center mt-6"><button id="check-decompose-btn" class="btn btn-primary">Check</button><button id="next-decompose-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-decompose" class="feedback hidden"></div>
+            </section>
+
+            <!-- Game 7: Hundreds Chart -->
+            <section id="game-hundreds-chart" class="game-card hidden">
+                <h2 class="text-3xl text-center text-red-500 mb-4">Game 7: Find on the Chart</h2>
+                <p id="hc-instruction" class="text-center text-slate-600 mb-6">Click on the number...</p>
+                <div id="hundreds-chart-container" class="hundreds-chart my-8"></div>
+                <div class="text-center mt-6"><button id="next-hc-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-hc" class="feedback hidden"></div>
+            </section>
+            
+             <!-- Game 8: Greater or Less -->
+            <section id="game-greater-less" class="game-card hidden">
+                <h2 class="text-3xl text-center text-indigo-500 mb-4">Game 8: Greater or Less Than?</h2>
+                <p class="text-center text-slate-600 mb-6">Click the correct symbol.</p>
+                <div class="flex justify-center items-center gap-4 my-8 text-6xl font-bold">
+                    <div id="gl-num1" class="text-slate-700">45</div>
+                    <div class="flex flex-col gap-2">
+                        <button id="gl-greater" class="text-4xl p-4 rounded-xl bg-slate-200 hover:bg-slate-300">&gt;</button>
+                        <button id="gl-less" class="text-4xl p-4 rounded-xl bg-slate-200 hover:bg-slate-300">&lt;</button>
+                    </div>
+                    <div id="gl-num2" class="text-slate-700">62</div>
+                </div>
+                <div class="text-center mt-6"><button id="next-gl-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-gl" class="feedback hidden"></div>
+            </section>
+
+            <!-- Game 9: What Number Am I? -->
+            <section id="game-what-number" class="game-card hidden">
+                <h2 class="text-3xl text-center text-cyan-500 mb-4">Game 9: What Number Am I?</h2>
+                <div class="bg-sky-100 p-6 rounded-2xl text-center my-8">
+                    <p id="wn-clue" class="text-2xl font-semibold text-sky-800">I have 3 tens and 8 ones.</p>
+                </div>
+                <div class="flex justify-center"><input type="number" id="wn-input" class="text-3xl w-32" placeholder="?"></div>
+                <div class="text-center mt-6"><button id="check-wn-btn" class="btn btn-primary">Check</button><button id="next-wn-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-wn" class="feedback hidden"></div>
+            </section>
+            
+            <!-- Game 10: Counting by 1s -->
+            <section id="game-counting-ones" class="game-card hidden">
+                <h2 class="text-3xl text-center text-lime-500 mb-4">Game 10: Counting by Ones</h2>
+                <p id="counting-ones-instruction" class="text-center text-slate-600 mb-6">Fill in the missing numbers.</p>
+                <div id="sequence-ones-container" class="flex justify-center items-center gap-2 md:gap-4 flex-wrap my-8"></div>
+                <div class="text-center mt-6"><button id="check-counting-ones-btn" class="btn btn-primary">Check</button><button id="next-counting-ones-btn" class="btn btn-secondary ml-2">Next</button></div>
+                <div id="feedback-counting-ones" class="feedback hidden"></div>
+            </section>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let score = 0;
+            const scoreValueEl = document.getElementById('score-value');
+            
+            const synth = new Tone.Synth().toDestination();
+            const correctSound = () => {
+                synth.triggerAttackRelease("C5", "8n", Tone.now());
+                synth.triggerAttackRelease("G5", "8n", Tone.now() + 0.2);
+            }
+            const incorrectSound = () => { synth.triggerAttackRelease("C3", "8n"); }
+
+            function updateScore(points) {
+                score += points;
+                scoreValueEl.textContent = score;
+            }
+
+            // --- Navigation ---
+            const navButtons = document.querySelectorAll('.nav-button');
+            const gameSections = document.querySelectorAll('.game-card');
+
+            function switchGame(gameName) {
+                navButtons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.game === gameName);
+                });
+                gameSections.forEach(sec => {
+                    sec.classList.toggle('hidden', sec.id !== `game-${gameName}`);
+                });
+            }
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    switchGame(button.dataset.game);
+                });
+            });
+
+            // --- Universal Check/Next Logic ---
+            function setupGame(gameName, checkFn, nextFn) {
+                const checkBtn = document.getElementById(`check-${gameName}-btn`);
+                const nextBtn = document.getElementById(`next-${gameName}-btn`);
+                if (checkBtn) {
+                    checkBtn.addEventListener('click', checkFn);
+                }
+                if (nextBtn) {
+                    nextBtn.addEventListener('click', nextFn);
+                }
+            }
+            
+            // --- Game 1: TENS & ONES ---
+            const blocksContainer = document.getElementById('blocks-container');
+            const tensInput = document.getElementById('tens-input');
+            const onesInput = document.getElementById('ones-input');
+            const totalNumberDisplay = document.getElementById('total-number-display');
+            const feedbackTens = document.getElementById('feedback-tens');
+            let currentTens, currentOnes;
+
+            function generateTensAndOnes() {
+                currentTens = Math.floor(Math.random() * 9) + 1;
+                currentOnes = Math.floor(Math.random() * 10);
+                blocksContainer.innerHTML = '';
+                for (let i = 0; i < currentTens; i++) {
+                    const tensBlock = document.createElement('div');
+                    tensBlock.className = 'tens-block';
+                    for(let j=0; j<9; j++) {
+                        const line = document.createElement('div');
+                        line.className = 'block-line';
+                        tensBlock.appendChild(line);
+                    }
+                    blocksContainer.appendChild(tensBlock);
+                }
+                for (let i = 0; i < currentOnes; i++) {
+                    const onesBlock = document.createElement('div');
+                    onesBlock.className = 'ones-block';
+                    blocksContainer.appendChild(onesBlock);
+                }
+                tensInput.value = ''; 
+                onesInput.value = '';
+                totalNumberDisplay.textContent = "?";
+                feedbackTens.classList.add('hidden');
+            }
+
+            function checkTensAndOnes() {
+                const userTens = parseInt(tensInput.value) || 0;
+                const userOnes = parseInt(onesInput.value) || 0;
+                totalNumberDisplay.textContent = userTens * 10 + userOnes;
+                if (userTens === currentTens && userOnes === currentOnes) {
+                    feedbackTens.textContent = 'Correct! +10 ⭐';
+                    feedbackTens.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackTens.textContent = `Not quite. It's ${currentTens} tens and ${currentOnes} ones.`;
+                    feedbackTens.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackTens.classList.remove('hidden');
+            }
+            setupGame('tens', checkTensAndOnes, generateTensAndOnes);
+
+            // --- GAME 2: COUNTING SEQUENCES ---
+            const sequenceContainer = document.getElementById('sequence-container');
+            const countingInstruction = document.getElementById('counting-instruction');
+            const feedbackCounting = document.getElementById('feedback-counting');
+            let missingIndices, correctSequence;
+
+            function generateCountingSequence() {
+                const types = [{ step: 2 }, { step: 5 }, { step: 10 }];
+                const type = types[Math.floor(Math.random() * types.length)];
+                const direction = Math.random() > 0.5 ? 'forward' : 'backward';
+                correctSequence = [];
+                const sequenceLength = 5;
+                let start;
+                if (direction === 'forward') {
+                    start = Math.floor(Math.random() * (100 - type.step * sequenceLength));
+                    for (let i = 0; i < sequenceLength; i++) correctSequence.push(start + i * type.step);
+                } else {
+                    start = Math.floor(Math.random() * (100 - type.step * sequenceLength)) + (type.step * sequenceLength);
+                    for (let i = 0; i < sequenceLength; i++) correctSequence.push(start - i * type.step);
+                }
+                countingInstruction.textContent = `Counting ${direction} by ${type.step}. Fill in the blanks!`;
+                missingIndices = [1, 3];
+                sequenceContainer.innerHTML = '';
+                correctSequence.forEach((num, index) => {
+                    if (missingIndices.includes(index)) {
+                        sequenceContainer.innerHTML += `<input type="number" class="sequence-input w-20" data-index="${index}">`;
+                    } else {
+                        sequenceContainer.innerHTML += `<div class="text-2xl md:text-3xl font-bold text-slate-700 bg-slate-200 p-4 rounded-lg">${num}</div>`;
+                    }
+                });
+                feedbackCounting.classList.add('hidden');
+            }
+
+            function checkCountingSequence() {
+                let allCorrect = true;
+                document.querySelectorAll('#sequence-container .sequence-input').forEach(input => {
+                    const index = parseInt(input.dataset.index);
+                    const userValue = parseInt(input.value);
+                    if (userValue !== correctSequence[index]) {
+                        allCorrect = false;
+                    }
+                });
+                if (allCorrect) {
+                    feedbackCounting.textContent = 'Excellent! +10 ⭐';
+                    feedbackCounting.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackCounting.textContent = 'Oops, try again!';
+                    feedbackCounting.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackCounting.classList.remove('hidden');
+            }
+            setupGame('counting', checkCountingSequence, generateCountingSequence);
+            
+            // --- GAME 3: FORWARD & BACKWARD ---
+            const fbStartNumberEl = document.getElementById('fb-start-number');
+            const fbStepsEl = document.getElementById('fb-steps');
+            const fbInput = document.getElementById('fb-input');
+            const feedbackFb = document.getElementById('feedback-fb');
+            let fbAnswer;
+
+            function generateForwardBackward() {
+                const direction = Math.random() > 0.5 ? 'forward' : 'backward';
+                const steps = Math.floor(Math.random() * 9) + 1;
+                let startNumber;
+                if (direction === 'forward') {
+                    startNumber = Math.floor(Math.random() * (100 - steps));
+                    fbAnswer = startNumber + steps;
+                } else {
+                    startNumber = Math.floor(Math.random() * (100 - steps)) + steps;
+                    fbAnswer = startNumber - steps;
+                }
+                fbStartNumberEl.textContent = startNumber;
+                fbStepsEl.textContent = `Go ${steps} step${steps > 1 ? 's' : ''} ${direction}`;
+                fbInput.value = '';
+                feedbackFb.classList.add('hidden');
+            }
+
+            function checkForwardBackward() {
+                if (parseInt(fbInput.value) === fbAnswer) {
+                    feedbackFb.textContent = 'You got it! +10 ⭐';
+                    feedbackFb.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackFb.textContent = `So close! The answer is ${fbAnswer}.`;
+                    feedbackFb.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackFb.classList.remove('hidden');
+            }
+            setupGame('fb', checkForwardBackward, generateForwardBackward);
+
+            // --- GAME 4: PLACE VALUE ---
+            const pvNumberEl = document.getElementById('pv-number');
+            const pvInput = document.getElementById('pv-input');
+            const feedbackPv = document.getElementById('feedback-pv');
+            let pvAnswer;
+
+            function generatePlaceValue() {
+                const num = Math.floor(Math.random() * 90) + 10;
+                const askTens = Math.random() > 0.5;
+                const digits = String(num).split('');
+                if (askTens) {
+                    pvNumberEl.innerHTML = `<span class="text-purple-500">${digits[0]}</span>${digits[1]}`;
+                    pvAnswer = parseInt(digits[0]) * 10;
+                } else {
+                    pvNumberEl.innerHTML = `${digits[0]}<span class="text-purple-500">${digits[1]}</span>`;
+                    pvAnswer = parseInt(digits[1]);
+                }
+                pvInput.value = '';
+                feedbackPv.classList.add('hidden');
+            }
+
+            function checkPlaceValue() {
+                 if (parseInt(pvInput.value) === pvAnswer) {
+                    feedbackPv.textContent = 'Perfect! +10 ⭐';
+                    feedbackPv.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackPv.textContent = `The value is ${pvAnswer}.`;
+                    feedbackPv.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackPv.classList.remove('hidden');
+            }
+            setupGame('pv', checkPlaceValue, generatePlaceValue);
+
+            // --- GAME 5: COMPOSE ---
+            const composePart1 = document.getElementById('compose-part1');
+            const composePart2 = document.getElementById('compose-part2');
+            const composeInput = document.getElementById('compose-input');
+            const feedbackCompose = document.getElementById('feedback-compose');
+            let composeAnswer;
+
+            function generateCompose() {
+                const tens = (Math.floor(Math.random() * 9) + 1) * 10;
+                const ones = Math.floor(Math.random() * 10);
+                composePart1.textContent = tens;
+                composePart2.textContent = ones;
+                composeAnswer = tens + ones;
+                composeInput.value = '';
+                feedbackCompose.classList.add('hidden');
+            }
+
+            function checkCompose() {
+                if (parseInt(composeInput.value) === composeAnswer) {
+                    feedbackCompose.textContent = 'Well done! +10 ⭐';
+                    feedbackCompose.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackCompose.textContent = `The answer is ${composeAnswer}.`;
+                    feedbackCompose.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackCompose.classList.remove('hidden');
+            }
+            setupGame('compose', checkCompose, generateCompose);
+            
+            // --- GAME 6: DECOMPOSE ---
+            const decomposeNumberEl = document.getElementById('decompose-number');
+            const decomposeTensInput = document.getElementById('decompose-tens');
+            const decomposeOnesInput = document.getElementById('decompose-ones');
+            const feedbackDecompose = document.getElementById('feedback-decompose');
+            let decomposeTensAnswer, decomposeOnesAnswer;
+
+            function generateDecompose() {
+                const num = Math.floor(Math.random() * 90) + 10;
+                decomposeNumberEl.textContent = num;
+                decomposeTensAnswer = Math.floor(num / 10) * 10;
+                decomposeOnesAnswer = num % 10;
+                decomposeTensInput.value = '';
+                decomposeOnesInput.value = '';
+                feedbackDecompose.classList.add('hidden');
+            }
+
+            function checkDecompose() {
+                const userTens = parseInt(decomposeTensInput.value);
+                const userOnes = parseInt(decomposeOnesInput.value);
+                if (userTens === decomposeTensAnswer && userOnes === decomposeOnesAnswer) {
+                    feedbackDecompose.textContent = 'Awesome! +10 ⭐';
+                    feedbackDecompose.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackDecompose.textContent = `It's ${decomposeTensAnswer} and ${decomposeOnesAnswer}.`;
+                    feedbackDecompose.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackDecompose.classList.remove('hidden');
+            }
+            setupGame('decompose', checkDecompose, generateDecompose);
+
+            // --- GAME 7: HUNDREDS CHART ---
+            const hcContainer = document.getElementById('hundreds-chart-container');
+            const hcInstruction = document.getElementById('hc-instruction');
+            const feedbackHc = document.getElementById('feedback-hc');
+            let hcAnswer;
+
+            function generateHundredsChart() {
+                hcContainer.innerHTML = '';
+                for (let i = 1; i <= 100; i++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'chart-cell';
+                    cell.textContent = i;
+                    cell.addEventListener('click', () => checkHundredsChart(i));
+                    hcContainer.appendChild(cell);
+                }
+                hcAnswer = Math.floor(Math.random() * 100) + 1;
+                hcInstruction.textContent = `Click on the number ${hcAnswer}`;
+                feedbackHc.classList.add('hidden');
+            }
+
+            function checkHundredsChart(clickedNumber) {
+                if (clickedNumber === hcAnswer) {
+                    feedbackHc.textContent = 'You found it! +10 ⭐';
+                    feedbackHc.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackHc.textContent = `Oops, that's ${clickedNumber}. Try finding ${hcAnswer}.`;
+                    feedbackHc.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackHc.classList.remove('hidden');
+            }
+            setupGame('hc', null, generateHundredsChart);
+
+            // --- GAME 8: GREATER OR LESS ---
+            const glNum1El = document.getElementById('gl-num1');
+            const glNum2El = document.getElementById('gl-num2');
+            const feedbackGl = document.getElementById('feedback-gl');
+            let glNum1, glNum2;
+
+            function generateGreaterLess() {
+                glNum1 = Math.floor(Math.random() * 100) + 1;
+                glNum2 = Math.floor(Math.random() * 100) + 1;
+                if (glNum1 === glNum2) glNum2 = (glNum2 % 100) + 1; // Ensure they are different
+                glNum1El.textContent = glNum1;
+                glNum2El.textContent = glNum2;
+                feedbackGl.classList.add('hidden');
+            }
+
+            function checkGreaterLess(symbol) {
+                let correct = false;
+                if (symbol === '>' && glNum1 > glNum2) correct = true;
+                if (symbol === '<' && glNum1 < glNum2) correct = true;
+                if (correct) {
+                    feedbackGl.textContent = 'Correct! +10 ⭐';
+                    feedbackGl.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackGl.textContent = 'Not quite, think again!';
+                    feedbackGl.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackGl.classList.remove('hidden');
+            }
+            document.getElementById('gl-greater').addEventListener('click', () => checkGreaterLess('>'));
+            document.getElementById('gl-less').addEventListener('click', () => checkGreaterLess('<'));
+            setupGame('gl', null, generateGreaterLess);
+
+            // --- GAME 9: WHAT NUMBER AM I? ---
+            const wnClueEl = document.getElementById('wn-clue');
+            const wnInput = document.getElementById('wn-input');
+            const feedbackWn = document.getElementById('feedback-wn');
+            let wnAnswer;
+
+            function generateWhatNumber() {
+                const tens = Math.floor(Math.random() * 9) + 1;
+                const ones = Math.floor(Math.random() * 10);
+                wnClueEl.textContent = `I have ${tens} tens and ${ones} ones.`;
+                wnAnswer = tens * 10 + ones;
+                wnInput.value = '';
+                feedbackWn.classList.add('hidden');
+            }
+
+            function checkWhatNumber() {
+                if (parseInt(wnInput.value) === wnAnswer) {
+                    feedbackWn.textContent = 'You figured it out! +10 ⭐';
+                    feedbackWn.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackWn.textContent = `The number was ${wnAnswer}.`;
+                    feedbackWn.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackWn.classList.remove('hidden');
+            }
+            setupGame('wn', checkWhatNumber, generateWhatNumber);
+
+            // --- GAME 10: COUNTING BY ONES ---
+            const sequenceOnesContainer = document.getElementById('sequence-ones-container');
+            const countingOnesInstruction = document.getElementById('counting-ones-instruction');
+            const feedbackCountingOnes = document.getElementById('feedback-counting-ones');
+            let correctSequenceOnes;
+
+            function generateCountingOnes() {
+                const direction = Math.random() > 0.5 ? 'forward' : 'backward';
+                correctSequenceOnes = [];
+                const sequenceLength = 5;
+                let start;
+                if (direction === 'forward') {
+                    start = Math.floor(Math.random() * (100 - sequenceLength));
+                    for (let i = 0; i < sequenceLength; i++) correctSequenceOnes.push(start + i);
+                } else {
+                    start = Math.floor(Math.random() * (100 - sequenceLength)) + sequenceLength;
+                    for (let i = 0; i < sequenceLength; i++) correctSequenceOnes.push(start - i);
+                }
+                countingOnesInstruction.textContent = `Counting ${direction} by ones.`;
+                sequenceOnesContainer.innerHTML = '';
+                const missingIndex = Math.floor(Math.random() * sequenceLength);
+                correctSequenceOnes.forEach((num, index) => {
+                    if (index === missingIndex) {
+                        sequenceOnesContainer.innerHTML += `<input type="number" class="sequence-input w-20" data-index="${index}">`;
+                    } else {
+                        sequenceOnesContainer.innerHTML += `<div class="text-2xl md:text-3xl font-bold text-slate-700 bg-slate-200 p-4 rounded-lg">${num}</div>`;
+                    }
+                });
+                feedbackCountingOnes.classList.add('hidden');
+            }
+
+            function checkCountingOnes() {
+                const input = document.querySelector('#sequence-ones-container .sequence-input');
+                const index = parseInt(input.dataset.index);
+                const userValue = parseInt(input.value);
+                if (userValue === correctSequenceOnes[index]) {
+                    feedbackCountingOnes.textContent = 'Great job! +10 ⭐';
+                    feedbackCountingOnes.className = 'feedback correct';
+                    correctSound(); 
+                    updateScore(10);
+                } else {
+                    feedbackCountingOnes.textContent = 'Try again!';
+                    feedbackCountingOnes.className = 'feedback incorrect';
+                    incorrectSound();
+                }
+                feedbackCountingOnes.classList.remove('hidden');
+            }
+            setupGame('counting-ones', checkCountingOnes, generateCountingOnes);
+
+
+            // --- Initial Load ---
+            generateTensAndOnes();
+            generateCountingSequence();
+            generateForwardBackward();
+            generatePlaceValue();
+            generateCompose();
+            generateDecompose();
+            generateHundredsChart();
+            generateGreaterLess();
+            generateWhatNumber();
+            generateCountingOnes();
+            switchGame('tens');
+        });
+    </script>
+</body>
+</html>
