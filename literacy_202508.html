@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juegos de Práctica de Inglés</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f9ff;
+        }
+        .font-fredoka {
+            font-family: 'Fredoka One', cursive;
+        }
+        .game-card {
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .game-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        #game-modal {
+            background-color: rgba(0,0,0,0.5);
+        }
+        .correct-answer {
+            animation: correct 0.5s ease;
+        }
+        .incorrect-answer {
+            animation: incorrect 0.5s ease;
+        }
+        @keyframes correct {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: #4ade80; }
+            100% { transform: scale(1); }
+        }
+        @keyframes incorrect {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Header with Score -->
+    <header class="sticky top-0 z-20 bg-white/80 backdrop-blur-sm shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl md:text-3xl font-bold text-blue-600 font-fredoka">¡A practicar Inglés! 🚀</h1>
+            <div id="score-container" class="text-lg md:text-2xl font-bold bg-amber-300 text-amber-800 px-4 py-2 rounded-full shadow">
+                Puntaje: <span id="total-score">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Game Grid -->
+    <main class="container mx-auto p-4 md:p-8">
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+            <!-- Game cards will be injected here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Game Modal -->
+    <div id="game-modal" class="fixed inset-0 z-30 flex items-center justify-center p-4 hidden">
+        <div id="game-modal-content" class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl p-6 md:p-8 relative transform transition-all duration-300 scale-95 opacity-0">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-gray-500 hover:text-gray-800 text-3xl">&times;</button>
+            <h2 id="game-title" class="text-2xl md:text-3xl font-bold text-center mb-6 font-fredoka text-violet-600">Título del Juego</h2>
+            <div id="game-area" class="text-center">
+                <!-- Game content goes here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Feedback Message -->
+    <div id="feedback-message" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 px-6 py-3 rounded-full text-white font-bold text-lg shadow-lg transition-all duration-300 opacity-0 transform translate-y-10">
+    </div>
+
+
+    <script>
+        // --- DATA ---
+        const vocabulary = {
+            'LUNCH': '🥪', 'TEACHER': '👩‍🏫', 'CHIPS': '🍟', 'CHICKEN': '🍗', 'CHEESE': '🧀', 
+            'SHARK': '🦈', 'FISH': '🐟', 'SHIP': '🚢', 'SHED': '🏠', 'SHELL': '🐚', 
+            'QUACK': '🦆', 'QUIET': '🤫', 'QUICK': '⚡️', 'QUEEN': '👑', 'QUESTION': '❓'
+        };
+        const phrases = [
+            "A SHELL IN A BUCKET",
+            "THE CHICKEN IS IN THE SHED",
+            "THE QUEEN HAS A RED DRESS",
+            "THE CAT IS ON THE MAT"
+        ];
+        const words = Object.keys(vocabulary);
+        const emojis = Object.values(vocabulary);
+
+        const games = [
+            { id: 1, title: "Une Imagen y Palabra", emoji: "🖼️", type: "imageToWord" },
+            { id: 2, title: "Encuentra el Sonido", emoji: "🔊", type: "findTheSound" },
+            { id: 3, title: "Completa la Palabra", emoji: "✍️", type: "completeTheWord" },
+            { id: 4, title: "Ordena la Frase", emoji: "➡️", type: "orderThePhrase" },
+            { id: 5, title: "Elige la Imagen Correcta", emoji: "🎯", type: "wordToImage" },
+            { id: 6, title: "Construye la Palabra", emoji: "🛠️", type: "buildTheWord" },
+            { id: 7, title: "Memoria de Palabras", emoji: "🧠", type: "memoryGame" },
+            { id: 8, title: "Verdadero o Falso", emoji: "👍👎", type: "trueOrFalse" },
+            { id: 9, title: "Sopa de Letras", emoji: "🕵️‍♀️", type: "wordSearch" },
+            { id: 10, title: "Adivina la Palabra", emoji: "🤔", type: "guessTheWord" }
+        ];
+
+        // --- STATE ---
+        let totalScore = 0;
+        let lockBoard = false; // For memory game
+
+        // --- DOM ELEMENTS ---
+        const scoreElement = document.getElementById('total-score');
+        const gameGrid = document.querySelector('.grid');
+        const modal = document.getElementById('game-modal');
+        const modalContent = document.getElementById('game-modal-content');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const gameTitle = document.getElementById('game-title');
+        const gameArea = document.getElementById('game-area');
+        const feedbackMessage = document.getElementById('feedback-message');
+
+        // --- UTILITY FUNCTIONS ---
+        const updateScore = (points) => {
+            totalScore += points;
+            scoreElement.textContent = totalScore;
+            const scoreContainer = document.getElementById('score-container');
+            scoreContainer.classList.add('transform', 'scale-110');
+            setTimeout(() => scoreContainer.classList.remove('transform', 'scale-110'), 200);
+        };
+        
+        const showFeedback = (message, isCorrect) => {
+            feedbackMessage.textContent = message;
+            feedbackMessage.style.backgroundColor = isCorrect ? '#22c55e' : '#ef4444';
+            feedbackMessage.classList.remove('opacity-0', 'translate-y-10');
+            setTimeout(() => {
+                feedbackMessage.classList.add('opacity-0', 'translate-y-10');
+            }, 1500);
+        };
+
+        const shuffleArray = (array) => array.sort(() => Math.random() - 0.5);
+
+        const getRandomItems = (arr, n) => {
+            const shuffled = [...arr].sort(() => 0.5 - Math.random());
+            return shuffled.slice(0, n);
+        };
+
+        // --- MODAL LOGIC ---
+        const openModal = () => {
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+
+        const closeModal = () => {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                gameArea.innerHTML = ''; // Clean up game area
+            }, 300);
+        };
+
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // --- GAME GENERATION ---
+        const generateGame = (game) => {
+            gameTitle.textContent = game.title;
+            gameArea.innerHTML = ''; // Clear previous game
+            
+            switch (game.type) {
+                case 'imageToWord': createImageToWordGame(); break;
+                case 'findTheSound': createFindTheSoundGame(); break;
+                case 'completeTheWord': createCompleteTheWordGame(); break;
+                case 'orderThePhrase': createOrderThePhraseGame(); break;
+                case 'wordToImage': createWordToImageGame(); break;
+                case 'buildTheWord': createBuildTheWordGame(); break;
+                case 'memoryGame': createMemoryGame(); break;
+                case 'trueOrFalse': createTrueOrFalseGame(); break;
+                case 'wordSearch': createWordSearchGame(); break;
+                case 'guessTheWord': createGuessTheWordGame(); break;
+            }
+            openModal();
+        };
+        
+        // --- GAME IMPLEMENTATIONS ---
+
+        function createImageToWordGame() {
+            const correctWord = getRandomItems(words, 1)[0];
+            const correctEmoji = vocabulary[correctWord];
+            let options = getRandomItems(words.filter(w => w !== correctWord), 3);
+            options.push(correctWord);
+            options = shuffleArray(options);
+
+            gameArea.innerHTML = `
+                <p class="text-6xl md:text-8xl mb-6">${correctEmoji}</p>
+                <div class="grid grid-cols-2 gap-4">
+                    ${options.map(opt => `<button class="game-option p-4 bg-sky-100 hover:bg-sky-200 rounded-lg text-lg font-semibold" data-answer="${opt === correctWord}">${opt}</button>`).join('')}
+                </div>`;
+            
+            gameArea.querySelectorAll('.game-option').forEach(btn => {
+                btn.addEventListener('click', handleAnswer);
+            });
+        }
+
+        function createFindTheSoundGame() {
+            const sounds = ['CH', 'SH', 'QU'];
+            const sound = getRandomItems(sounds, 1)[0];
+            const correctWords = words.filter(w => w.startsWith(sound));
+            const incorrectWords = getRandomItems(words.filter(w => !w.startsWith(sound)), 6 - correctWords.length);
+            let options = shuffleArray([...correctWords, ...incorrectWords]);
+            let correctCount = 0;
+
+            gameArea.innerHTML = `
+                <p class="text-2xl md:text-3xl mb-6">Encuentra las palabras que empiezan con: <span class="font-bold text-rose-500 text-4xl">${sound}</span></p>
+                <div class="grid grid-cols-3 gap-4">
+                    ${options.map(opt => `<button class="game-option p-4 bg-sky-100 hover:bg-sky-200 rounded-lg text-lg font-semibold" data-correct="${opt.startsWith(sound)}">${opt}</button>`).join('')}
+                </div>`;
+            
+            gameArea.querySelectorAll('.game-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.dataset.correct === 'true') {
+                        btn.classList.add('bg-green-400', 'text-white');
+                        btn.disabled = true;
+                        correctCount++;
+                        if (correctCount === correctWords.length) {
+                             showFeedback('¡Muy bien!', true);
+                             updateScore(10);
+                             setTimeout(closeModal, 1000);
+                        }
+                    } else {
+                        btn.classList.add('bg-red-400', 'text-white');
+                        showFeedback('Inténtalo de nuevo', false);
+                    }
+                });
+            });
+        }
+        
+        function createCompleteTheWordGame() {
+            const word = getRandomItems(words, 1)[0];
+            if (word.length < 3) return createImageToWordGame(); // fallback for short words
+            const missingIndex = Math.floor(Math.random() * (word.length - 2)) + 1;
+            const missingLetter = word[missingIndex];
+            const displayWord = word.substring(0, missingIndex) + '_' + word.substring(missingIndex + 1);
+            
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let options = [missingLetter];
+            while (options.length < 4) {
+                const randomLetter = alphabet[Math.floor(Math.random() * alphabet.length)];
+                if (!options.includes(randomLetter)) {
+                    options.push(randomLetter);
+                }
+            }
+            options = shuffleArray(options);
+
+            gameArea.innerHTML = `
+                <p class="text-6xl md:text-8xl mb-6">${vocabulary[word]}</p>
+                <p class="text-4xl tracking-widest font-mono mb-6">${displayWord}</p>
+                <div class="flex justify-center gap-4">
+                    ${options.map(opt => `<button class="game-option w-16 h-16 bg-sky-100 hover:bg-sky-200 rounded-lg text-2xl font-bold" data-answer="${opt === missingLetter}">${opt}</button>`).join('')}
+                </div>`;
+            
+            gameArea.querySelectorAll('.game-option').forEach(btn => {
+                btn.addEventListener('click', handleAnswer);
+            });
+        }
+
+        function createOrderThePhraseGame() {
+            const phrase = getRandomItems(phrases, 1)[0];
+            const wordsInPhrase = phrase.split(' ');
+            const shuffledWords = shuffleArray([...wordsInPhrase]);
+
+            gameArea.innerHTML = `
+                <p class="text-xl md:text-2xl mb-4">Ordena las palabras para formar la frase:</p>
+                <div id="phrase-box" class="h-20 p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">Arrastra las palabras aquí</div>
+                <div id="word-bank" class="flex flex-wrap justify-center gap-4">
+                    ${shuffledWords.map(word => `<div class="p-3 bg-amber-200 rounded-lg text-lg font-semibold cursor-grab" draggable="true">${word}</div>`).join('')}
+                </div>
+                <button id="check-phrase-btn" class="mt-6 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600">Revisar</button>
+            `;
+
+            const phraseBox = gameArea.querySelector('#phrase-box');
+            const wordBank = gameArea.querySelector('#word-bank');
+            const checkBtn = gameArea.querySelector('#check-phrase-btn');
+
+            let draggedItem = null;
+            wordBank.querySelectorAll('div').forEach(item => {
+                item.addEventListener('dragstart', (e) => {
+                    draggedItem = e.target;
+                    setTimeout(() => e.target.style.display = 'none', 0);
+                });
+                item.addEventListener('dragend', (e) => {
+                    setTimeout(() => {
+                        e.target.style.display = 'block';
+                        draggedItem = null;
+                    }, 0);
+                });
+            });
+
+            phraseBox.addEventListener('dragover', e => e.preventDefault());
+            phraseBox.addEventListener('dragenter', e => {
+                e.preventDefault();
+                phraseBox.classList.add('bg-gray-200');
+            });
+            phraseBox.addEventListener('dragleave', () => phraseBox.classList.remove('bg-gray-200'));
+            phraseBox.addEventListener('drop', (e) => {
+                if (phraseBox.textContent === 'Arrastra las palabras aquí') phraseBox.innerHTML = '';
+                phraseBox.appendChild(draggedItem);
+                phraseBox.classList.remove('bg-gray-200');
+            });
+
+            checkBtn.addEventListener('click', () => {
+                const orderedWords = Array.from(phraseBox.children).map(el => el.textContent).join(' ');
+                if (orderedWords === phrase) {
+                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                } else {
+                    showFeedback('Casi, ¡intenta de nuevo!', false);
+                }
+            });
+        }
+        
+        function createWordToImageGame() {
+            const correctWord = getRandomItems(words, 1)[0];
+            const correctEmoji = vocabulary[correctWord];
+            let options = [correctEmoji];
+            while (options.length < 4) {
+                const randomEmoji = getRandomItems(emojis, 1)[0];
+                if (!options.includes(randomEmoji)) {
+                    options.push(randomEmoji);
+                }
+            }
+            options = shuffleArray(options);
+
+            gameArea.innerHTML = `
+                <p class="text-3xl md:text-4xl font-bold mb-6">${correctWord}</p>
+                <div class="grid grid-cols-2 gap-4">
+                    ${options.map(opt => `<button class="game-option p-4 bg-sky-100 hover:bg-sky-200 rounded-lg text-6xl" data-answer="${opt === correctEmoji}">${opt}</button>`).join('')}
+                </div>`;
+            
+            gameArea.querySelectorAll('.game-option').forEach(btn => {
+                btn.addEventListener('click', handleAnswer);
+            });
+        }
+        
+        function createBuildTheWordGame() {
+            const word = getRandomItems(words, 1)[0];
+            const letters = shuffleArray(word.split(''));
+
+            gameArea.innerHTML = `
+                <p class="text-6xl md:text-8xl mb-6">${vocabulary[word]}</p>
+                <div id="build-box" class="h-20 p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 text-3xl font-mono"></div>
+                <div id="letter-bank" class="flex flex-wrap justify-center gap-4">
+                    ${letters.map(letter => `<div class="w-12 h-12 flex items-center justify-center text-2xl p-3 bg-amber-200 rounded-lg font-semibold cursor-grab" draggable="true">${letter}</div>`).join('')}
+                </div>
+                <button id="check-build-btn" class="mt-6 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600">Revisar</button>
+            `;
+            
+            // Simplified drag-and-drop logic for this game
+            const buildBox = gameArea.querySelector('#build-box');
+            const letterBank = gameArea.querySelector('#letter-bank');
+            const checkBtn = gameArea.querySelector('#check-build-btn');
+
+            letterBank.querySelectorAll('div').forEach(letter => {
+                letter.addEventListener('click', () => {
+                    buildBox.appendChild(letter);
+                });
+            });
+            
+            buildBox.addEventListener('click', (e) => {
+                if (e.target.draggable) {
+                    letterBank.appendChild(e.target);
+                }
+            });
+
+            checkBtn.addEventListener('click', () => {
+                const builtWord = Array.from(buildBox.children).map(el => el.textContent).join('');
+                if (builtWord === word) {
+                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                } else {
+                    showFeedback('No es correcto, ¡intenta de nuevo!', false);
+                }
+            });
+        }
+
+        function createMemoryGame() {
+            lockBoard = false;
+            let firstCard, secondCard;
+            let hasFlippedCard = false;
+            let matchesFound = 0;
+
+            const cardItems = getRandomItems(words, 6);
+            const gameItems = shuffleArray([...cardItems, ...cardItems]);
+            const totalPairs = cardItems.length;
+
+            gameArea.innerHTML = `
+                <p class="text-xl md:text-2xl mb-4">Encuentra todos los pares</p>
+                <div class="grid grid-cols-4 gap-4 aspect-[4/3]">
+                    ${gameItems.map(item => `
+                        <div class="memory-card bg-blue-400 rounded-lg flex items-center justify-center cursor-pointer" data-framework="${item}">
+                            <div class="front text-4xl">${vocabulary[item] ? vocabulary[item] : ''}</div>
+                            <div class="back text-4xl text-blue-400">?</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            // Basic CSS for flip effect
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .memory-card { position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
+                .memory-card .front, .memory-card .back { position: absolute; backface-visibility: hidden; }
+                .memory-card .front { transform: rotateY(180deg); background-color: #f0f9ff; width:100%; height:100%; display:flex; justify-content:center; align-items:center; border-radius: 0.5rem; }
+                .memory-card.flip { transform: rotateY(180deg); }
+                .memory-card .back { display:flex; justify-content:center; align-items:center; width:100%; height:100%;}
+            `;
+            document.head.appendChild(style);
+
+            const cards = gameArea.querySelectorAll('.memory-card');
+
+            function flipCard() {
+                if (lockBoard) return;
+                if (this === firstCard) return;
+
+                this.classList.add('flip');
+
+                if (!hasFlippedCard) {
+                    hasFlippedCard = true;
+                    firstCard = this;
+                    return;
+                }
+
+                secondCard = this;
+                checkForMatch();
+            }
+
+            function checkForMatch() {
+                let isMatch = (vocabulary[firstCard.dataset.framework] && secondCard.dataset.framework === firstCard.dataset.framework) || (vocabulary[secondCard.dataset.framework] && firstCard.dataset.framework === secondCard.dataset.framework);
+                isMatch ? disableCards() : unflipCards();
+            }
+
+            function disableCards() {
+                firstCard.removeEventListener('click', flipCard);
+                secondCard.removeEventListener('click', flipCard);
+                matchesFound++;
+                if (matchesFound === totalPairs) {
+                    showFeedback('¡Ganaste!', true);
+                    updateScore(10);
+                    setTimeout(closeModal, 1500);
+                }
+                resetBoard();
+            }
+
+            function unflipCards() {
+                lockBoard = true;
+                setTimeout(() => {
+                    firstCard.classList.remove('flip');
+                    secondCard.classList.remove('flip');
+                    resetBoard();
+                }, 1000);
+            }
+            
+            function resetBoard() {
+                [hasFlippedCard, lockBoard] = [false, false];
+                [firstCard, secondCard] = [null, null];
+            }
+
+            cards.forEach(card => card.addEventListener('click', flipCard));
+        }
+        
+        function createTrueOrFalseGame() {
+            const isTrue = Math.random() > 0.5;
+            const phrase = getRandomItems(phrases, 1)[0];
+            let displayPhrase;
+
+            if (isTrue) {
+                displayPhrase = phrase;
+            } else {
+                const wordsInPhrase = phrase.split(' ');
+                const nouns = words.filter(w => !['A', 'IN', 'THE', 'IS', 'HAS', 'ON'].includes(w));
+                const randomNoun = getRandomItems(nouns, 1)[0];
+                const wordToReplace = getRandomItems(wordsInPhrase.filter(w => nouns.includes(w)), 1)[0];
+                if (wordToReplace) {
+                    displayPhrase = phrase.replace(wordToReplace, randomNoun);
+                } else {
+                    displayPhrase = "THE SHARK IS ON THE MAT"; // Fallback
+                }
+            }
+
+            gameArea.innerHTML = `
+                <p class="text-xl md:text-2xl mb-6">¿La frase es correcta para la imagen?</p>
+                <p class="text-2xl font-semibold my-4 p-4 bg-gray-100 rounded-lg">${displayPhrase}</p>
+                <div class="flex justify-center gap-4">
+                    <button class="game-option px-8 py-4 bg-green-500 text-white rounded-lg text-xl font-bold" data-answer="${isTrue}">Verdadero</button>
+                    <button class="game-option px-8 py-4 bg-red-500 text-white rounded-lg text-xl font-bold" data-answer="${!isTrue}">Falso</button>
+                </div>
+            `;
+            
+            gameArea.querySelectorAll('.game-option').forEach(btn => {
+                btn.addEventListener('click', handleAnswer);
+            });
+        }
+        
+        function createWordSearchGame() {
+            // Simplified for a 6yo
+            const wordsToFind = getRandomItems(words.filter(w => w.length < 6), 3);
+            const gridSize = 8;
+            let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
+            const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            let foundWords = 0;
+
+            // Place words
+            wordsToFind.forEach(word => {
+                let placed = false;
+                while (!placed) {
+                    const direction = Math.random() > 0.5 ? 'horizontal' : 'vertical';
+                    let row = Math.floor(Math.random() * gridSize);
+                    let col = Math.floor(Math.random() * gridSize);
+
+                    if (direction === 'horizontal' && col + word.length <= gridSize) {
+                        let canPlace = true;
+                        for (let i = 0; i < word.length; i++) {
+                            if (grid[row][col + i] !== '') canPlace = false;
+                        }
+                        if (canPlace) {
+                            for (let i = 0; i < word.length; i++) {
+                                grid[row][col + i] = word[i];
+                            }
+                            placed = true;
+                        }
+                    } else if (direction === 'vertical' && row + word.length <= gridSize) {
+                        let canPlace = true;
+                        for (let i = 0; i < word.length; i++) {
+                            if (grid[row + i][col] !== '') canPlace = false;
+                        }
+                        if (canPlace) {
+                            for (let i = 0; i < word.length; i++) {
+                                grid[row + i][col] = word[i];
+                            }
+                            placed = true;
+                        }
+                    }
+                }
+            });
+
+            // Fill empty cells
+            for (let r = 0; r < gridSize; r++) {
+                for (let c = 0; c < gridSize; c++) {
+                    if (grid[r][c] === '') {
+                        grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+                    }
+                }
+            }
+
+            gameArea.innerHTML = `
+                <div class="flex justify-between items-center mb-4">
+                    <p class="text-xl">Encuentra:</p>
+                    <div id="words-list" class="flex gap-4 font-semibold text-lg">
+                        ${wordsToFind.map(w => `<span data-word="${w}">${w}</span>`).join('')}
+                    </div>
+                </div>
+                <div id="search-grid" class="grid grid-cols-8 gap-1 p-2 bg-blue-100 rounded-lg" style="user-select: none;">
+                    ${grid.flat().map((letter, i) => `<div class="w-10 h-10 flex items-center justify-center bg-white rounded font-mono text-xl cursor-pointer" data-row="${Math.floor(i/gridSize)}" data-col="${i%gridSize}">${letter}</div>`).join('')}
+                </div>
+            `;
+            
+            const gridCells = gameArea.querySelectorAll('#search-grid div');
+            let selectedCells = [];
+            let isSelecting = false;
+
+            gridCells.forEach(cell => {
+                cell.addEventListener('mousedown', () => { isSelecting = true; selectCell(cell); });
+                cell.addEventListener('mouseover', () => { if(isSelecting) selectCell(cell); });
+            });
+            document.addEventListener('mouseup', () => {
+                if (isSelecting) {
+                    checkSelection();
+                    isSelecting = false;
+                    selectedCells = [];
+                    gridCells.forEach(c => c.classList.remove('bg-yellow-300'));
+                }
+            });
+
+            function selectCell(cell) {
+                if (!selectedCells.includes(cell)) {
+                    cell.classList.add('bg-yellow-300');
+                    selectedCells.push(cell);
+                }
+            }
+
+            function checkSelection() {
+                const selectedWord = selectedCells.map(c => c.textContent).join('');
+                const wordIndex = wordsToFind.indexOf(selectedWord);
+                if (wordIndex > -1) {
+                    selectedCells.forEach(c => c.classList.add('bg-green-400', 'text-white'));
+                    document.querySelector(`#words-list span[data-word="${selectedWord}"]`).style.textDecoration = 'line-through';
+                    wordsToFind.splice(wordIndex, 1);
+                    if (wordsToFind.length === 0) {
+                        showFeedback('¡Excelente!', true);
+                        updateScore(10);
+                        setTimeout(closeModal, 1000);
+                    }
+                }
+            }
+        }
+        
+        function createGuessTheWordGame() {
+            const word = getRandomItems(words, 1)[0];
+            const emoji = vocabulary[word];
+            
+            gameArea.innerHTML = `
+                <p class="text-6xl md:text-8xl mb-6">${emoji}</p>
+                <p class="mb-4 text-xl">¿Qué palabra es?</p>
+                <div class="flex justify-center items-center gap-2">
+                    <input id="guess-input" type="text" class="w-64 p-3 border-2 border-gray-300 rounded-lg text-center text-xl uppercase focus:border-blue-500 focus:ring-blue-500" maxlength="${word.length}">
+                    <button id="check-guess-btn" class="px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600">OK</button>
+                </div>
+            `;
+
+            const input = gameArea.querySelector('#guess-input');
+            const checkBtn = gameArea.querySelector('#check-guess-btn');
+
+            const checkGuess = () => {
+                if (input.value.toUpperCase() === word) {
+                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                } else {
+                    showFeedback('¡Ups! Intenta de nuevo.', false);
+                    input.classList.add('incorrect-answer');
+                    setTimeout(() => input.classList.remove('incorrect-answer'), 500);
+                }
+            };
+            
+            checkBtn.addEventListener('click', checkGuess);
+            input.addEventListener('keyup', (e) => {
+                if (e.key === 'Enter') checkGuess();
+            });
+        }
+        
+        // --- ANSWER HANDLING ---
+        function handleAnswer(e) {
+            const isCorrect = e.target.dataset.answer === 'true';
+            
+            e.target.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
+            
+            if (isCorrect) {
+                showFeedback('¡Correcto!', true);
+                updateScore(10);
+                setTimeout(closeModal, 1000);
+            } else {
+                showFeedback('Inténtalo de nuevo', false);
+                setTimeout(() => e.target.classList.remove('incorrect-answer'), 500);
+            }
+        }
+        
+        // --- INITIALIZATION ---
+        const init = () => {
+            games.forEach(game => {
+                const card = document.createElement('div');
+                card.className = 'game-card bg-white p-4 rounded-xl shadow-lg text-center cursor-pointer flex flex-col items-center justify-center aspect-square';
+                card.innerHTML = `
+                    <div class="text-4xl md:text-5xl mb-2">${game.emoji}</div>
+                    <h3 class="text-sm md:text-base font-semibold text-gray-700">${game.title}</h3>
+                `;
+                card.addEventListener('click', () => generateGame(game));
+                gameGrid.appendChild(card);
+            });
+        };
+
+        init();
+    </script>
+
+</body>
+</html>
