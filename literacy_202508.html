@@ -274,10 +274,10 @@
             const shuffledWords = shuffleArray([...wordsInPhrase]);
 
             gameArea.innerHTML = `
-                <p class="text-xl md:text-2xl mb-4">Ordena las palabras para formar la frase:</p>
-                <div id="phrase-box" class="h-20 p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">Arrastra las palabras aquí</div>
-                <div id="word-bank" class="flex flex-wrap justify-center gap-4">
-                    ${shuffledWords.map(word => `<div class="p-3 bg-amber-200 rounded-lg text-lg font-semibold cursor-grab" draggable="true">${word}</div>`).join('')}
+                <p class="text-xl md:text-2xl mb-4">Toca las palabras para formar la frase:</p>
+                <div id="phrase-box" class="min-h-[5rem] p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-wrap items-center justify-center gap-2"></div>
+                <div id="word-bank" class="min-h-[5rem] p-4 flex flex-wrap justify-center gap-4 border-t-2 mt-4">
+                    ${shuffledWords.map(word => `<div class="p-3 bg-amber-200 rounded-lg text-lg font-semibold cursor-pointer">${word}</div>`).join('')}
                 </div>
                 <button id="check-phrase-btn" class="mt-6 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600">Revisar</button>
             `;
@@ -286,36 +286,23 @@
             const wordBank = gameArea.querySelector('#word-bank');
             const checkBtn = gameArea.querySelector('#check-phrase-btn');
 
-            let draggedItem = null;
-            wordBank.querySelectorAll('div').forEach(item => {
-                item.addEventListener('dragstart', (e) => {
-                    draggedItem = e.target;
-                    setTimeout(() => e.target.style.display = 'none', 0);
-                });
-                item.addEventListener('dragend', (e) => {
-                    setTimeout(() => {
-                        e.target.style.display = 'block';
-                        draggedItem = null;
-                    }, 0);
-                });
-            });
+            const moveWord = (e) => {
+                if (e.target.parentElement && e.target.parentElement.id === 'word-bank') {
+                    phraseBox.appendChild(e.target);
+                } else if (e.target.parentElement && e.target.parentElement.id === 'phrase-box') {
+                    wordBank.appendChild(e.target);
+                }
+            };
 
-            phraseBox.addEventListener('dragover', e => e.preventDefault());
-            phraseBox.addEventListener('dragenter', e => {
-                e.preventDefault();
-                phraseBox.classList.add('bg-gray-200');
-            });
-            phraseBox.addEventListener('dragleave', () => phraseBox.classList.remove('bg-gray-200'));
-            phraseBox.addEventListener('drop', (e) => {
-                if (phraseBox.textContent === 'Arrastra las palabras aquí') phraseBox.innerHTML = '';
-                phraseBox.appendChild(draggedItem);
-                phraseBox.classList.remove('bg-gray-200');
-            });
+            wordBank.addEventListener('click', moveWord);
+            phraseBox.addEventListener('click', moveWord);
 
             checkBtn.addEventListener('click', () => {
                 const orderedWords = Array.from(phraseBox.children).map(el => el.textContent).join(' ');
                 if (orderedWords === phrase) {
-                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                    showFeedback('¡Correcto!', true);
+                    updateScore(10);
+                    setTimeout(closeModal, 1000);
                 } else {
                     showFeedback('Casi, ¡intenta de nuevo!', false);
                 }
@@ -351,34 +338,34 @@
 
             gameArea.innerHTML = `
                 <p class="text-6xl md:text-8xl mb-6">${vocabulary[word]}</p>
-                <div id="build-box" class="h-20 p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 text-3xl font-mono"></div>
-                <div id="letter-bank" class="flex flex-wrap justify-center gap-4">
-                    ${letters.map(letter => `<div class="w-12 h-12 flex items-center justify-center text-2xl p-3 bg-amber-200 rounded-lg font-semibold cursor-grab" draggable="true">${letter}</div>`).join('')}
+                <div id="build-box" class="min-h-[5rem] p-4 mb-4 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center gap-2 text-3xl font-mono"></div>
+                <div id="letter-bank" class="min-h-[5rem] p-4 flex flex-wrap justify-center gap-4 border-t-2 mt-4">
+                    ${letters.map(letter => `<div class="w-12 h-12 flex items-center justify-center text-2xl p-3 bg-amber-200 rounded-lg font-semibold cursor-pointer">${letter}</div>`).join('')}
                 </div>
                 <button id="check-build-btn" class="mt-6 px-6 py-3 bg-green-500 text-white font-bold rounded-lg hover:bg-green-600">Revisar</button>
             `;
             
-            // Simplified drag-and-drop logic for this game
             const buildBox = gameArea.querySelector('#build-box');
             const letterBank = gameArea.querySelector('#letter-bank');
             const checkBtn = gameArea.querySelector('#check-build-btn');
 
-            letterBank.querySelectorAll('div').forEach(letter => {
-                letter.addEventListener('click', () => {
-                    buildBox.appendChild(letter);
-                });
-            });
-            
-            buildBox.addEventListener('click', (e) => {
-                if (e.target.draggable) {
+            const moveLetter = (e) => {
+                if (e.target.parentElement && e.target.parentElement.id === 'letter-bank') {
+                    buildBox.appendChild(e.target);
+                } else if (e.target.parentElement && e.target.parentElement.id === 'build-box') {
                     letterBank.appendChild(e.target);
                 }
-            });
+            };
+
+            letterBank.addEventListener('click', moveLetter);
+            buildBox.addEventListener('click', moveLetter);
 
             checkBtn.addEventListener('click', () => {
                 const builtWord = Array.from(buildBox.children).map(el => el.textContent).join('');
                 if (builtWord === word) {
-                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                    showFeedback('¡Correcto!', true);
+                    updateScore(10);
+                    setTimeout(closeModal, 1000);
                 } else {
                     showFeedback('No es correcto, ¡intenta de nuevo!', false);
                 }
@@ -407,7 +394,6 @@
                 </div>
             `;
             
-            // Basic CSS for flip effect
             const style = document.createElement('style');
             style.innerHTML = `
                 .memory-card { position: relative; transform-style: preserve-3d; transition: transform 0.5s; }
@@ -423,21 +409,18 @@
             function flipCard() {
                 if (lockBoard) return;
                 if (this === firstCard) return;
-
                 this.classList.add('flip');
-
                 if (!hasFlippedCard) {
                     hasFlippedCard = true;
                     firstCard = this;
                     return;
                 }
-
                 secondCard = this;
                 checkForMatch();
             }
 
             function checkForMatch() {
-                let isMatch = (vocabulary[firstCard.dataset.framework] && secondCard.dataset.framework === firstCard.dataset.framework) || (vocabulary[secondCard.dataset.framework] && firstCard.dataset.framework === secondCard.dataset.framework);
+                let isMatch = firstCard.dataset.framework === secondCard.dataset.framework;
                 isMatch ? disableCards() : unflipCards();
             }
 
@@ -482,7 +465,7 @@
                 const nouns = words.filter(w => !['A', 'IN', 'THE', 'IS', 'HAS', 'ON'].includes(w));
                 const randomNoun = getRandomItems(nouns, 1)[0];
                 const wordToReplace = getRandomItems(wordsInPhrase.filter(w => nouns.includes(w)), 1)[0];
-                if (wordToReplace) {
+                if (wordToReplace && randomNoun) {
                     displayPhrase = phrase.replace(wordToReplace, randomNoun);
                 } else {
                     displayPhrase = "THE SHARK IS ON THE MAT"; // Fallback
@@ -490,7 +473,7 @@
             }
 
             gameArea.innerHTML = `
-                <p class="text-xl md:text-2xl mb-6">¿La frase es correcta para la imagen?</p>
+                <p class="text-xl md:text-2xl mb-6">¿La frase es correcta?</p>
                 <p class="text-2xl font-semibold my-4 p-4 bg-gray-100 rounded-lg">${displayPhrase}</p>
                 <div class="flex justify-center gap-4">
                     <button class="game-option px-8 py-4 bg-green-500 text-white rounded-lg text-xl font-bold" data-answer="${isTrue}">Verdadero</button>
@@ -504,87 +487,88 @@
         }
         
         function createWordSearchGame() {
-            // Simplified for a 6yo
-            const wordsToFind = getRandomItems(words.filter(w => w.length < 6), 3);
+            const wordsToFindSource = getRandomItems(words.filter(w => w.length < 6), 3);
+            let wordsToFind = [...wordsToFindSource];
             const gridSize = 8;
             let grid = Array(gridSize).fill().map(() => Array(gridSize).fill(''));
             const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-            let foundWords = 0;
 
-            // Place words
             wordsToFind.forEach(word => {
                 let placed = false;
-                while (!placed) {
+                for (let attempt = 0; attempt < 20 && !placed; attempt++) {
                     const direction = Math.random() > 0.5 ? 'horizontal' : 'vertical';
                     let row = Math.floor(Math.random() * gridSize);
                     let col = Math.floor(Math.random() * gridSize);
-
                     if (direction === 'horizontal' && col + word.length <= gridSize) {
                         let canPlace = true;
-                        for (let i = 0; i < word.length; i++) {
-                            if (grid[row][col + i] !== '') canPlace = false;
-                        }
+                        for (let i = 0; i < word.length; i++) if (grid[row][col + i] !== '') canPlace = false;
                         if (canPlace) {
-                            for (let i = 0; i < word.length; i++) {
-                                grid[row][col + i] = word[i];
-                            }
+                            for (let i = 0; i < word.length; i++) grid[row][col + i] = word[i];
                             placed = true;
                         }
                     } else if (direction === 'vertical' && row + word.length <= gridSize) {
                         let canPlace = true;
-                        for (let i = 0; i < word.length; i++) {
-                            if (grid[row + i][col] !== '') canPlace = false;
-                        }
+                        for (let i = 0; i < word.length; i++) if (grid[row + i][col] !== '') canPlace = false;
                         if (canPlace) {
-                            for (let i = 0; i < word.length; i++) {
-                                grid[row + i][col] = word[i];
-                            }
+                            for (let i = 0; i < word.length; i++) grid[row + i][col] = word[i];
                             placed = true;
                         }
                     }
                 }
             });
 
-            // Fill empty cells
-            for (let r = 0; r < gridSize; r++) {
-                for (let c = 0; c < gridSize; c++) {
-                    if (grid[r][c] === '') {
-                        grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
-                    }
-                }
-            }
+            for (let r = 0; r < gridSize; r++) for (let c = 0; c < gridSize; c++) if (grid[r][c] === '') grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
 
             gameArea.innerHTML = `
                 <div class="flex justify-between items-center mb-4">
                     <p class="text-xl">Encuentra:</p>
                     <div id="words-list" class="flex gap-4 font-semibold text-lg">
-                        ${wordsToFind.map(w => `<span data-word="${w}">${w}</span>`).join('')}
+                        ${wordsToFindSource.map(w => `<span data-word="${w}">${w}</span>`).join('')}
                     </div>
                 </div>
-                <div id="search-grid" class="grid grid-cols-8 gap-1 p-2 bg-blue-100 rounded-lg" style="user-select: none;">
+                <div id="search-grid" class="grid grid-cols-8 gap-1 p-2 bg-blue-100 rounded-lg" style="user-select: none; touch-action: none;">
                     ${grid.flat().map((letter, i) => `<div class="w-10 h-10 flex items-center justify-center bg-white rounded font-mono text-xl cursor-pointer" data-row="${Math.floor(i/gridSize)}" data-col="${i%gridSize}">${letter}</div>`).join('')}
                 </div>
             `;
             
+            const gridEl = gameArea.querySelector('#search-grid');
             const gridCells = gameArea.querySelectorAll('#search-grid div');
             let selectedCells = [];
             let isSelecting = false;
 
-            gridCells.forEach(cell => {
-                cell.addEventListener('mousedown', () => { isSelecting = true; selectCell(cell); });
-                cell.addEventListener('mouseover', () => { if(isSelecting) selectCell(cell); });
-            });
-            document.addEventListener('mouseup', () => {
+            const endSelection = () => {
                 if (isSelecting) {
                     checkSelection();
                     isSelecting = false;
                     selectedCells = [];
                     gridCells.forEach(c => c.classList.remove('bg-yellow-300'));
                 }
-            });
+            };
+
+            const startSelection = (target) => {
+                isSelecting = true;
+                selectCell(target);
+            };
+
+            const moveSelection = (target) => {
+                if(isSelecting) selectCell(target);
+            };
+
+            gridEl.addEventListener('mousedown', (e) => startSelection(e.target));
+            gridEl.addEventListener('mouseover', (e) => moveSelection(e.target));
+            document.addEventListener('mouseup', endSelection);
+
+            gridEl.addEventListener('touchstart', (e) => { e.preventDefault(); startSelection(e.target); }, { passive: false });
+            gridEl.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const touch = e.touches[0];
+                const cell = document.elementFromPoint(touch.clientX, touch.clientY);
+                if (cell && cell.parentElement === gridEl) moveSelection(cell);
+            }, { passive: false });
+            document.addEventListener('touchend', endSelection);
 
             function selectCell(cell) {
-                if (!selectedCells.includes(cell)) {
+                if (cell && !selectedCells.includes(cell) && cell.parentElement === gridEl) {
                     cell.classList.add('bg-yellow-300');
                     selectedCells.push(cell);
                 }
@@ -624,7 +608,10 @@
 
             const checkGuess = () => {
                 if (input.value.toUpperCase() === word) {
-                    handleAnswer({ target: { dataset: { answer: 'true' } } });
+                    input.classList.add('correct-answer');
+                    showFeedback('¡Correcto!', true);
+                    updateScore(10);
+                    setTimeout(closeModal, 1000);
                 } else {
                     showFeedback('¡Ups! Intenta de nuevo.', false);
                     input.classList.add('incorrect-answer');
