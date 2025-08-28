@@ -266,19 +266,16 @@
             const scoreValueEl = document.getElementById('score-value');
             
             // --- Audio Initialization ---
-            // We will initialize audio on the first user interaction to comply with browser policies.
             let synth;
             let audioReady = false;
 
             async function initializeAudio() {
-                // This function runs only once on the first click/tap.
                 if (audioReady) return;
                 try {
                     await Tone.start();
                     synth = new Tone.Synth().toDestination();
                     audioReady = true;
                     console.log("Audio is ready!");
-                    // Remove the event listeners after initialization
                     document.body.removeEventListener('click', initializeAudio);
                     document.body.removeEventListener('touchstart', initializeAudio);
                 } catch (e) {
@@ -286,7 +283,6 @@
                 }
             }
 
-            // Listen for the first interaction to start the audio
             document.body.addEventListener('click', initializeAudio);
             document.body.addEventListener('touchstart', initializeAudio);
 
@@ -328,14 +324,16 @@
             function setupGame(gameName, checkFn, nextFn) {
                 const checkBtn = document.getElementById(`check-${gameName}-btn`);
                 const nextBtn = document.getElementById(`next-${gameName}-btn`);
-                if (checkBtn) {
-                    checkBtn.addEventListener('click', checkFn);
-                }
-                if (nextBtn) {
-                    nextBtn.addEventListener('click', nextFn);
-                }
+                if (checkBtn) checkBtn.addEventListener('click', checkFn);
+                if (nextBtn) nextBtn.addEventListener('click', nextFn);
             }
             
+            // --- Game States ---
+            let canScoreStates = {
+                tens: true, counting: true, fb: true, pv: true, compose: true,
+                decompose: true, hc: true, gl: true, wn: true, countingOnes: true
+            };
+
             // --- Game 1: TENS & ONES ---
             const blocksContainer = document.getElementById('blocks-container');
             const tensInput = document.getElementById('tens-input');
@@ -345,26 +343,18 @@
             let currentTens, currentOnes;
 
             function generateTensAndOnes() {
+                canScoreStates.tens = true;
                 currentTens = Math.floor(Math.random() * 9) + 1;
                 currentOnes = Math.floor(Math.random() * 10);
                 blocksContainer.innerHTML = '';
                 for (let i = 0; i < currentTens; i++) {
                     const tensBlock = document.createElement('div');
                     tensBlock.className = 'tens-block';
-                    for(let j=0; j<9; j++) {
-                        const line = document.createElement('div');
-                        line.className = 'block-line';
-                        tensBlock.appendChild(line);
-                    }
+                    for(let j=0; j<9; j++) tensBlock.appendChild(document.createElement('div')).className = 'block-line';
                     blocksContainer.appendChild(tensBlock);
                 }
-                for (let i = 0; i < currentOnes; i++) {
-                    const onesBlock = document.createElement('div');
-                    onesBlock.className = 'ones-block';
-                    blocksContainer.appendChild(onesBlock);
-                }
-                tensInput.value = ''; 
-                onesInput.value = '';
+                for (let i = 0; i < currentOnes; i++) blocksContainer.appendChild(document.createElement('div')).className = 'ones-block';
+                tensInput.value = ''; onesInput.value = '';
                 totalNumberDisplay.textContent = "?";
                 feedbackTens.classList.add('hidden');
             }
@@ -373,11 +363,15 @@
                 const userTens = parseInt(tensInput.value) || 0;
                 const userOnes = parseInt(onesInput.value) || 0;
                 totalNumberDisplay.textContent = userTens * 10 + userOnes;
-                if (userTens === currentTens && userOnes === currentOnes) {
+                const isCorrect = userTens === currentTens && userOnes === currentOnes;
+                if (isCorrect) {
                     feedbackTens.textContent = 'Correct! +10 ⭐';
                     feedbackTens.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.tens) {
+                        updateScore(10);
+                        canScoreStates.tens = false;
+                    }
                 } else {
                     feedbackTens.textContent = `Not quite. It's ${currentTens} tens and ${currentOnes} ones.`;
                     feedbackTens.className = 'feedback incorrect';
@@ -391,9 +385,10 @@
             const sequenceContainer = document.getElementById('sequence-container');
             const countingInstruction = document.getElementById('counting-instruction');
             const feedbackCounting = document.getElementById('feedback-counting');
-            let missingIndices, correctSequence;
+            let correctSequence;
 
             function generateCountingSequence() {
+                canScoreStates.counting = true;
                 const types = [{ step: 2 }, { step: 5 }, { step: 10 }];
                 const type = types[Math.floor(Math.random() * types.length)];
                 const direction = Math.random() > 0.5 ? 'forward' : 'backward';
@@ -408,7 +403,7 @@
                     for (let i = 0; i < sequenceLength; i++) correctSequence.push(start - i * type.step);
                 }
                 countingInstruction.textContent = `Counting ${direction} by ${type.step}. Fill in the blanks!`;
-                missingIndices = [1, 3];
+                const missingIndices = [1, 3];
                 sequenceContainer.innerHTML = '';
                 correctSequence.forEach((num, index) => {
                     if (missingIndices.includes(index)) {
@@ -423,17 +418,16 @@
             function checkCountingSequence() {
                 let allCorrect = true;
                 document.querySelectorAll('#sequence-container .sequence-input').forEach(input => {
-                    const index = parseInt(input.dataset.index);
-                    const userValue = parseInt(input.value);
-                    if (userValue !== correctSequence[index]) {
-                        allCorrect = false;
-                    }
+                    if (parseInt(input.value) !== correctSequence[parseInt(input.dataset.index)]) allCorrect = false;
                 });
                 if (allCorrect) {
                     feedbackCounting.textContent = 'Excellent! +10 ⭐';
                     feedbackCounting.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.counting) {
+                        updateScore(10);
+                        canScoreStates.counting = false;
+                    }
                 } else {
                     feedbackCounting.textContent = 'Oops, try again!';
                     feedbackCounting.className = 'feedback incorrect';
@@ -451,6 +445,7 @@
             let fbAnswer;
 
             function generateForwardBackward() {
+                canScoreStates.fb = true;
                 const direction = Math.random() > 0.5 ? 'forward' : 'backward';
                 const steps = Math.floor(Math.random() * 9) + 1;
                 let startNumber;
@@ -472,7 +467,10 @@
                     feedbackFb.textContent = 'You got it! +10 ⭐';
                     feedbackFb.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.fb) {
+                        updateScore(10);
+                        canScoreStates.fb = false;
+                    }
                 } else {
                     feedbackFb.textContent = `So close! The answer is ${fbAnswer}.`;
                     feedbackFb.className = 'feedback incorrect';
@@ -489,6 +487,7 @@
             let pvAnswer;
 
             function generatePlaceValue() {
+                canScoreStates.pv = true;
                 const num = Math.floor(Math.random() * 90) + 10;
                 const askTens = Math.random() > 0.5;
                 const digits = String(num).split('');
@@ -508,7 +507,10 @@
                     feedbackPv.textContent = 'Perfect! +10 ⭐';
                     feedbackPv.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.pv) {
+                        updateScore(10);
+                        canScoreStates.pv = false;
+                    }
                 } else {
                     feedbackPv.textContent = `The value is ${pvAnswer}.`;
                     feedbackPv.className = 'feedback incorrect';
@@ -526,6 +528,7 @@
             let composeAnswer;
 
             function generateCompose() {
+                canScoreStates.compose = true;
                 const tens = (Math.floor(Math.random() * 9) + 1) * 10;
                 const ones = Math.floor(Math.random() * 10);
                 composePart1.textContent = tens;
@@ -540,7 +543,10 @@
                     feedbackCompose.textContent = 'Well done! +10 ⭐';
                     feedbackCompose.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.compose) {
+                        updateScore(10);
+                        canScoreStates.compose = false;
+                    }
                 } else {
                     feedbackCompose.textContent = `The answer is ${composeAnswer}.`;
                     feedbackCompose.className = 'feedback incorrect';
@@ -558,6 +564,7 @@
             let decomposeTensAnswer, decomposeOnesAnswer;
 
             function generateDecompose() {
+                canScoreStates.decompose = true;
                 const num = Math.floor(Math.random() * 90) + 10;
                 decomposeNumberEl.textContent = num;
                 decomposeTensAnswer = Math.floor(num / 10) * 10;
@@ -574,7 +581,10 @@
                     feedbackDecompose.textContent = 'Awesome! +10 ⭐';
                     feedbackDecompose.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.decompose) {
+                        updateScore(10);
+                        canScoreStates.decompose = false;
+                    }
                 } else {
                     feedbackDecompose.textContent = `It's ${decomposeTensAnswer} and ${decomposeOnesAnswer}.`;
                     feedbackDecompose.className = 'feedback incorrect';
@@ -591,6 +601,7 @@
             let hcAnswer;
 
             function generateHundredsChart() {
+                canScoreStates.hc = true;
                 hcContainer.innerHTML = '';
                 for (let i = 1; i <= 100; i++) {
                     const cell = document.createElement('div');
@@ -609,7 +620,10 @@
                     feedbackHc.textContent = 'You found it! +10 ⭐';
                     feedbackHc.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.hc) {
+                        updateScore(10);
+                        canScoreStates.hc = false;
+                    }
                 } else {
                     feedbackHc.textContent = `Oops, that's ${clickedNumber}. Try finding ${hcAnswer}.`;
                     feedbackHc.className = 'feedback incorrect';
@@ -626,9 +640,10 @@
             let glNum1, glNum2;
 
             function generateGreaterLess() {
+                canScoreStates.gl = true;
                 glNum1 = Math.floor(Math.random() * 100) + 1;
                 glNum2 = Math.floor(Math.random() * 100) + 1;
-                if (glNum1 === glNum2) glNum2 = (glNum2 % 100) + 1; // Ensure they are different
+                if (glNum1 === glNum2) glNum2 = (glNum2 % 100) + 1;
                 glNum1El.textContent = glNum1;
                 glNum2El.textContent = glNum2;
                 feedbackGl.classList.add('hidden');
@@ -642,7 +657,10 @@
                     feedbackGl.textContent = 'Correct! +10 ⭐';
                     feedbackGl.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.gl) {
+                        updateScore(10);
+                        canScoreStates.gl = false;
+                    }
                 } else {
                     feedbackGl.textContent = 'Not quite, think again!';
                     feedbackGl.className = 'feedback incorrect';
@@ -661,6 +679,7 @@
             let wnAnswer;
 
             function generateWhatNumber() {
+                canScoreStates.wn = true;
                 const tens = Math.floor(Math.random() * 9) + 1;
                 const ones = Math.floor(Math.random() * 10);
                 wnClueEl.textContent = `I have ${tens} tens and ${ones} ones.`;
@@ -674,7 +693,10 @@
                     feedbackWn.textContent = 'You figured it out! +10 ⭐';
                     feedbackWn.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.wn) {
+                        updateScore(10);
+                        canScoreStates.wn = false;
+                    }
                 } else {
                     feedbackWn.textContent = `The number was ${wnAnswer}.`;
                     feedbackWn.className = 'feedback incorrect';
@@ -691,6 +713,7 @@
             let correctSequenceOnes;
 
             function generateCountingOnes() {
+                canScoreStates.countingOnes = true;
                 const direction = Math.random() > 0.5 ? 'forward' : 'backward';
                 correctSequenceOnes = [];
                 const sequenceLength = 5;
@@ -723,7 +746,10 @@
                     feedbackCountingOnes.textContent = 'Great job! +10 ⭐';
                     feedbackCountingOnes.className = 'feedback correct';
                     correctSound(); 
-                    updateScore(10);
+                    if (canScoreStates.countingOnes) {
+                        updateScore(10);
+                        canScoreStates.countingOnes = false;
+                    }
                 } else {
                     feedbackCountingOnes.textContent = 'Try again!';
                     feedbackCountingOnes.className = 'feedback incorrect';
