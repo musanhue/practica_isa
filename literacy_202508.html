@@ -121,6 +121,21 @@
         const feedbackMessage = document.getElementById('feedback-message');
 
         // --- UTILITY FUNCTIONS ---
+        
+        // Function to speak text using Web Speech API
+        const speak = (text) => {
+            if ('speechSynthesis' in window) {
+                // Cancel any previous speech to avoid overlap
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US'; // Set language to English (US)
+                utterance.rate = 0.9; // Slightly slower for better comprehension
+                window.speechSynthesis.speak(utterance);
+            } else {
+                console.log("Speech synthesis is not supported in this browser.");
+            }
+        };
+
         const updateScore = (points) => {
             totalScore += points;
             scoreElement.textContent = totalScore;
@@ -202,7 +217,7 @@
                 </div>`;
             
             gameArea.querySelectorAll('.game-option').forEach(btn => {
-                btn.addEventListener('click', handleAnswer);
+                btn.addEventListener('click', (e) => handleAnswer(e, correctWord));
             });
         }
 
@@ -222,16 +237,17 @@
             
             gameArea.querySelectorAll('.game-option').forEach(btn => {
                 btn.addEventListener('click', () => {
-                    if (btn.dataset.correct === 'true') {
+                    if (btn.dataset.correct === 'true' && !btn.disabled) {
+                        speak(btn.textContent); // Speak the correct word
                         btn.classList.add('bg-green-400', 'text-white');
                         btn.disabled = true;
                         correctCount++;
                         if (correctCount === correctWords.length) {
                              showFeedback('¡Muy bien!', true);
                              updateScore(10);
-                             setTimeout(closeModal, 1000);
+                             setTimeout(closeModal, 1500);
                         }
-                    } else {
+                    } else if (!btn.disabled) {
                         btn.classList.add('bg-red-400', 'text-white');
                         showFeedback('Inténtalo de nuevo', false);
                     }
@@ -241,7 +257,7 @@
         
         function createCompleteTheWordGame() {
             const word = getRandomItems(words, 1)[0];
-            if (word.length < 3) return createImageToWordGame(); // fallback for short words
+            if (word.length < 3) return createImageToWordGame(); // fallback
             const missingIndex = Math.floor(Math.random() * (word.length - 2)) + 1;
             const missingLetter = word[missingIndex];
             const displayWord = word.substring(0, missingIndex) + '_' + word.substring(missingIndex + 1);
@@ -250,9 +266,7 @@
             let options = [missingLetter];
             while (options.length < 4) {
                 const randomLetter = alphabet[Math.floor(Math.random() * alphabet.length)];
-                if (!options.includes(randomLetter)) {
-                    options.push(randomLetter);
-                }
+                if (!options.includes(randomLetter)) options.push(randomLetter);
             }
             options = shuffleArray(options);
 
@@ -264,7 +278,7 @@
                 </div>`;
             
             gameArea.querySelectorAll('.game-option').forEach(btn => {
-                btn.addEventListener('click', handleAnswer);
+                btn.addEventListener('click', (e) => handleAnswer(e, word));
             });
         }
 
@@ -300,9 +314,10 @@
             checkBtn.addEventListener('click', () => {
                 const orderedWords = Array.from(phraseBox.children).map(el => el.textContent).join(' ');
                 if (orderedWords === phrase) {
+                    speak(phrase);
                     showFeedback('¡Correcto!', true);
                     updateScore(10);
-                    setTimeout(closeModal, 1000);
+                    setTimeout(closeModal, 2000); // Longer delay for phrase
                 } else {
                     showFeedback('Casi, ¡intenta de nuevo!', false);
                 }
@@ -315,9 +330,7 @@
             let options = [correctEmoji];
             while (options.length < 4) {
                 const randomEmoji = getRandomItems(emojis, 1)[0];
-                if (!options.includes(randomEmoji)) {
-                    options.push(randomEmoji);
-                }
+                if (!options.includes(randomEmoji)) options.push(randomEmoji);
             }
             options = shuffleArray(options);
 
@@ -328,7 +341,7 @@
                 </div>`;
             
             gameArea.querySelectorAll('.game-option').forEach(btn => {
-                btn.addEventListener('click', handleAnswer);
+                btn.addEventListener('click', (e) => handleAnswer(e, correctWord));
             });
         }
         
@@ -363,9 +376,10 @@
             checkBtn.addEventListener('click', () => {
                 const builtWord = Array.from(buildBox.children).map(el => el.textContent).join('');
                 if (builtWord === word) {
+                    speak(word);
                     showFeedback('¡Correcto!', true);
                     updateScore(10);
-                    setTimeout(closeModal, 1000);
+                    setTimeout(closeModal, 1500);
                 } else {
                     showFeedback('No es correcto, ¡intenta de nuevo!', false);
                 }
@@ -407,8 +421,7 @@
             const cards = gameArea.querySelectorAll('.memory-card');
 
             function flipCard() {
-                if (lockBoard) return;
-                if (this === firstCard) return;
+                if (lockBoard || this.classList.contains('flip')) return;
                 this.classList.add('flip');
                 if (!hasFlippedCard) {
                     hasFlippedCard = true;
@@ -425,6 +438,7 @@
             }
 
             function disableCards() {
+                speak(firstCard.dataset.framework); // Speak the matched word
                 firstCard.removeEventListener('click', flipCard);
                 secondCard.removeEventListener('click', flipCard);
                 matchesFound++;
@@ -482,7 +496,7 @@
             `;
             
             gameArea.querySelectorAll('.game-option').forEach(btn => {
-                btn.addEventListener('click', handleAnswer);
+                btn.addEventListener('click', (e) => handleAnswer(e, displayPhrase));
             });
         }
         
@@ -545,19 +559,12 @@
                 }
             };
 
-            const startSelection = (target) => {
-                isSelecting = true;
-                selectCell(target);
-            };
-
-            const moveSelection = (target) => {
-                if(isSelecting) selectCell(target);
-            };
+            const startSelection = (target) => { isSelecting = true; selectCell(target); };
+            const moveSelection = (target) => { if(isSelecting) selectCell(target); };
 
             gridEl.addEventListener('mousedown', (e) => startSelection(e.target));
             gridEl.addEventListener('mouseover', (e) => moveSelection(e.target));
             document.addEventListener('mouseup', endSelection);
-
             gridEl.addEventListener('touchstart', (e) => { e.preventDefault(); startSelection(e.target); }, { passive: false });
             gridEl.addEventListener('touchmove', (e) => {
                 e.preventDefault();
@@ -578,13 +585,14 @@
                 const selectedWord = selectedCells.map(c => c.textContent).join('');
                 const wordIndex = wordsToFind.indexOf(selectedWord);
                 if (wordIndex > -1) {
+                    speak(selectedWord); // Speak the found word
                     selectedCells.forEach(c => c.classList.add('bg-green-400', 'text-white'));
                     document.querySelector(`#words-list span[data-word="${selectedWord}"]`).style.textDecoration = 'line-through';
                     wordsToFind.splice(wordIndex, 1);
                     if (wordsToFind.length === 0) {
                         showFeedback('¡Excelente!', true);
                         updateScore(10);
-                        setTimeout(closeModal, 1000);
+                        setTimeout(closeModal, 1500);
                     }
                 }
             }
@@ -608,10 +616,11 @@
 
             const checkGuess = () => {
                 if (input.value.toUpperCase() === word) {
+                    speak(word);
                     input.classList.add('correct-answer');
                     showFeedback('¡Correcto!', true);
                     updateScore(10);
-                    setTimeout(closeModal, 1000);
+                    setTimeout(closeModal, 1500);
                 } else {
                     showFeedback('¡Ups! Intenta de nuevo.', false);
                     input.classList.add('incorrect-answer');
@@ -620,21 +629,20 @@
             };
             
             checkBtn.addEventListener('click', checkGuess);
-            input.addEventListener('keyup', (e) => {
-                if (e.key === 'Enter') checkGuess();
-            });
+            input.addEventListener('keyup', (e) => { if (e.key === 'Enter') checkGuess(); });
         }
         
-        // --- ANSWER HANDLING ---
-        function handleAnswer(e) {
+        // --- ANSWER HANDLING (for simpler games) ---
+        function handleAnswer(e, textToSpeak) {
             const isCorrect = e.target.dataset.answer === 'true';
             
             e.target.classList.add(isCorrect ? 'correct-answer' : 'incorrect-answer');
             
             if (isCorrect) {
+                if (textToSpeak) speak(textToSpeak);
                 showFeedback('¡Correcto!', true);
                 updateScore(10);
-                setTimeout(closeModal, 1000);
+                setTimeout(closeModal, 1500); // Increased delay to allow speech to finish
             } else {
                 showFeedback('Inténtalo de nuevo', false);
                 setTimeout(() => e.target.classList.remove('incorrect-answer'), 500);
