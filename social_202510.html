@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juegos Interactivos de Animales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Fredoka One', cursive;
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            color: #1e3a8a;
+        }
+        .game-card {
+            background-color: white;
+            border-radius: 2rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease-in-out;
+        }
+        .option-btn {
+            transition: all 0.2s ease-in-out;
+        }
+        .option-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        .correct {
+            animation: correct-pulse 0.5s ease;
+        }
+        .incorrect {
+            animation: incorrect-shake 0.5s ease;
+        }
+        @keyframes correct-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: #22c55e; color: white; }
+            100% { transform: scale(1); }
+        }
+        @keyframes incorrect-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-10px); }
+            40%, 80% { transform: translateX(10px); }
+            50% { background-color: #ef4444; color: white; }
+        }
+        #feedback-modal {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div id="game-container" class="w-full max-w-2xl mx-auto text-center">
+        
+        <!-- Header -->
+        <header class="mb-6">
+            <h1 class="text-5xl font-bold text-sky-600">Animal Games! 🎲</h1>
+            <p class="text-lg text-slate-500">¡Juegos de Animales!</p>
+            <div id="score-display" class="mt-4 text-3xl font-bold bg-white px-6 py-3 rounded-full shadow-lg inline-block text-blue-800">
+                Score: <span id="score">0</span>
+                <small class="block text-sm text-slate-400">Puntaje</small>
+            </div>
+        </header>
+
+        <!-- Start Screen -->
+        <div id="start-screen" class="game-card p-8">
+            <h2 class="text-3xl font-bold mb-4">Ready to play? 🦒</h2>
+            <p class="text-xl text-slate-600 mb-6">¿Lista para jugar?</p>
+            <button onclick="startGame()" class="w-full py-4 text-2xl font-bold text-white bg-orange-500 hover:bg-orange-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-200">
+                Start! <span class="text-sm">(Empezar)</span>
+            </button>
+        </div>
+
+        <!-- Game Area -->
+        <div id="game-area" class="game-card p-8 hidden">
+            <div id="progress-bar-container" class="w-full bg-gray-200 rounded-full h-4 mb-4">
+                <div id="progress-bar" class="bg-blue-500 h-4 rounded-full" style="width: 0%"></div>
+            </div>
+            <img id="animal-image" src="" alt="Animal" class="w-full max-w-sm mx-auto h-64 object-cover rounded-2xl mb-6 shadow-md">
+            <h2 id="question" class="text-2xl md:text-3xl font-bold mb-1"></h2>
+            <p id="question-es" class="text-lg text-slate-500 mb-6"></p>
+            <div id="options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Options will be generated here -->
+            </div>
+        </div>
+        
+        <!-- Final Screen -->
+        <div id="final-screen" class="game-card p-8 hidden">
+            <h2 class="text-4xl font-bold mb-4">Great Job! 🎉</h2>
+            <p class="text-2xl text-slate-600 mb-2">¡Excelente Trabajo!</p>
+            <p class="text-xl text-slate-500 mb-6">Your final score is: <span id="final-score" class="font-bold text-blue-800"></span></p>
+             <p class="text-xl text-slate-500 mb-6"><small>(Tu puntaje final es: <span id="final-score-es" class="font-bold text-blue-800"></span>)</small></p>
+            <button onclick="restartGame()" class="w-full py-4 text-2xl font-bold text-white bg-green-500 hover:bg-green-600 rounded-2xl shadow-lg transform hover:scale-105 transition-transform duration-200">
+                Play Again? <span class="text-sm">(¿Jugar de nuevo?)</span>
+            </button>
+        </div>
+
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedback-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden opacity-0">
+        <div id="feedback-content" class="text-6xl font-bold text-white p-8 rounded-full">
+            <!-- Feedback content here -->
+        </div>
+    </div>
+
+    <script>
+        const gameData = [
+            // Set 1
+            { image: "https://placehold.co/600x400/34d399/ffffff?text=Queen+Angelfish", question: "What covers the Queen Angelfish's skin?", question_es: "¿Qué cubre la piel del Pez Ángel Reina?", options: [ { text: "Scales", text_es: "Escamas", correct: true }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/60a5fa/ffffff?text=Kingfisher", question: "What covers the Kingfisher's skin?", question_es: "¿Qué cubre la piel del Martín Pescador?", options: [ { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/f59e0b/ffffff?text=Andean+Fox", question: "What covers the Andean Fox's skin?", question_es: "¿Qué cubre la piel del Zorro Andino?", options: [ { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: true }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/84cc16/ffffff?text=Darwin's+Frog", question: "What covers the Darwin's Frog's skin?", question_es: "¿Qué cubre la piel de la Rana de Darwin?", options: [ { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: true } ] },
+            { image: "https://placehold.co/600x400/a78bfa/ffffff?text=Deer", question: "How does a deer move?", question_es: "¿Cómo se mueve un ciervo?", options: [ { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It runs", text_es: "Corre", correct: true } ] },
+            { image: "https://placehold.co/600x400/f472b6/ffffff?text=Snail", question: "How does a snail move?", question_es: "¿Cómo se mueve un caracol?", options: [ { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: true }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It hops", text_es: "Salta", correct: false } ] },
+            { image: "https://placehold.co/600x400/22d3ee/ffffff?text=Butterfly", question: "How does a butterfly move?", question_es: "¿Cómo se mueve una mariposa?", options: [ { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It flies", text_es: "Vuela", correct: true }, { text: "It walks", text_es: "Camina", correct: false } ] },
+            { image: "https://placehold.co/600x400/38bdf8/ffffff?text=Fish", question: "How does a fish move?", question_es: "¿Cómo se mueve un pez?", options: [ { text: "It swims", text_es: "Nada", correct: true }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It runs", text_es: "Corre", correct: false } ] },
+            { image: "https://placehold.co/600x400/4f46e5/ffffff?text=Eagle", question: "Does the eagle have wings?", question_es: "¿El águila tiene alas?", options: [ { text: "Yes 👍", text_es: "Sí 👍", correct: true }, { text: "No 👎", text_es: "No 👎", correct: false } ] },
+            { image: "https://placehold.co/600x400/c084fc/ffffff?text=Dog", question: "Does the dog fly?", question_es: "¿El perro vuela?", options: [ { text: "Yes 👍", text_es: "Sí 👍", correct: false }, { text: "No 👎", text_es: "No 👎", correct: true } ] },
+            
+            // Set 2
+            { image: "https://placehold.co/600x400/eab308/ffffff?text=Lion", question: "What covers the lion's skin?", question_es: "¿Qué cubre la piel del león?", options: [ { text: "Hair", text_es: "Pelo", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/ec4899/ffffff?text=Parrot", question: "What covers the parrot's skin?", question_es: "¿Qué cubre la piel del loro?", options: [ { text: "Feathers", text_es: "Plumas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/14b8a6/ffffff?text=Snake", question: "How does a snake move?", question_es: "¿Cómo se mueve una serpiente?", options: [ { text: "It slithers", text_es: "Se desliza", correct: true }, { text: "It runs", text_es: "Corre", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It hops", text_es: "Salta", correct: false } ] },
+            { image: "https://placehold.co/600x400/8b5cf6/ffffff?text=Kangaroo", question: "How does a kangaroo move?", question_es: "¿Cómo se mueve un canguro?", options: [ { text: "It hops", text_es: "Salta", correct: true }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It flies", text_es: "Vuela", correct: false } ] },
+            { image: "https://placehold.co/600x400/d946ef/ffffff?text=Bee", question: "Does a bee have wings?", question_es: "¿La abeja tiene alas?", options: [ { text: "Yes 👍", text_es: "Sí 👍", correct: true }, { text: "No 👎", text_es: "No 👎", correct: false } ] },
+            { image: "https://placehold.co/600x400/f97316/ffffff?text=Bear", question: "What covers the bear's skin?", question_es: "¿Qué cubre la piel del oso?", options: [ { text: "Hair", text_es: "Pelo", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/0ea5e9/ffffff?text=Whale", question: "How does a whale move?", question_es: "¿Cómo se mueve una ballena?", options: [ { text: "It swims", text_es: "Nada", correct: true }, { text: "It walks", text_es: "Camina", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false } ] },
+            { image: "https://placehold.co/600x400/ef4444/ffffff?text=Lizard", question: "What covers the lizard's skin?", question_es: "¿Qué cubre la piel del lagarto?", options: [ { text: "Scales", text_es: "Escamas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/22c55e/ffffff?text=Frog", question: "How does a frog move?", question_es: "¿Cómo se mueve una rana?", options: [ { text: "It hops", text_es: "Salta", correct: true }, { text: "It runs", text_es: "Corre", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It slithers", text_es: "Se desliza", correct: false } ] },
+            { image: "https://placehold.co/600x400/64748b/ffffff?text=Penguin", question: "What covers the penguin's skin?", question_es: "¿Qué cubre la piel del pingüino?", options: [ { text: "Feathers", text_es: "Plumas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+
+            // Set 3
+            { image: "https://placehold.co/600x400/fbbf24/ffffff?text=Cheetah", question: "How does a cheetah move?", question_es: "¿Cómo se mueve un guepardo?", options: [ { text: "It runs", text_es: "Corre", correct: true }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false } ] },
+            { image: "https://placehold.co/600x400/3b82f6/ffffff?text=Dolphin", question: "What covers the dolphin's skin?", question_es: "¿Qué cubre la piel del delfín?", options: [ { text: "Bare skin", text_es: "Piel desnuda", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: false } ] },
+            { image: "https://placehold.co/600x400/a855f7/ffffff?text=Bat", question: "How does a bat move?", question_es: "¿Cómo se mueve un murciélago?", options: [ { text: "It flies", text_es: "Vuela", correct: true }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It runs", text_es: "Corre", correct: false } ] },
+            { image: "https://placehold.co/600x400/10b981/ffffff?text=Crocodile", question: "What covers the crocodile's skin?", question_es: "¿Qué cubre la piel del cocodrilo?", options: [ { text: "Scales", text_es: "Escamas", correct: true }, { text: "Bare skin", text_es: "Piel desnuda", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: false } ] },
+            { image: "https://placehold.co/600x400/f43f5e/ffffff?text=Worm", question: "Does a worm have legs?", question_es: "¿El gusano tiene patas?", options: [ { text: "No 👎", text_es: "No 👎", correct: true }, { text: "Yes 👍", text_es: "Sí 👍", correct: false } ] },
+            { image: "https://placehold.co/600x400/78716c/ffffff?text=Horse", question: "What covers the horse's skin?", question_es: "¿Qué cubre la piel del caballo?", options: [ { text: "Hair", text_es: "Pelo", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/06b6d4/ffffff?text=Shark", question: "How does a shark move?", question_es: "¿Cómo se mueve un tiburón?", options: [ { text: "It swims", text_es: "Nada", correct: true }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It walks", text_es: "Camina", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false } ] },
+            { image: "https://placehold.co/600x400/9333ea/ffffff?text=Pigeon", question: "How does a pigeon move?", question_es: "¿Cómo se mueve una paloma?", options: [ { text: "It flies", text_es: "Vuela", correct: true }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false }, { text: "It runs", text_es: "Corre", correct: false } ] },
+            { image: "https://placehold.co/600x400/4d7c0f/ffffff?text=Turtle", question: "How does a turtle move?", question_es: "¿Cómo se mueve una tortuga?", options: [ { text: "It walks", text_es: "Camina", correct: true }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It hops", text_es: "Salta", correct: false }, { text: "It slithers", text_es: "Se desliza", correct: false } ] },
+            { image: "https://placehold.co/600x400/be123c/ffffff?text=Spider", question: "Does a spider fly?", question_es: "¿La araña vuela?", options: [ { text: "No 👎", text_es: "No 👎", correct: true }, { text: "Yes 👍", text_es: "Sí 👍", correct: false } ] },
+
+            // Set 4
+            { image: "https://placehold.co/600x400/ca8a04/ffffff?text=Ostrich", question: "What covers the ostrich's skin?", question_es: "¿Qué cubre la piel del avestruz?", options: [ { text: "Feathers", text_es: "Plumas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/059669/ffffff?text=Salamander", question: "What covers the salamander's skin?", question_es: "¿Qué cubre la piel de la salamandra?", options: [ { text: "Bare skin", text_es: "Piel desnuda", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Hair", text_es: "Pelo", correct: false } ] },
+            { image: "https://placehold.co/600x400/4338ca/ffffff?text=Elephant", question: "Does an elephant fly?", question_es: "¿Un elefante vuela?", options: [ { text: "No 👎", text_es: "No 👎", correct: true }, { text: "Yes 👍", text_es: "Sí 👍", correct: false } ] },
+            { image: "https://placehold.co/600x400/e11d48/ffffff?text=Ladybug", question: "How does a ladybug move?", question_es: "¿Cómo se mueve una mariquita?", options: [ { text: "It flies", text_es: "Vuela", correct: true }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It hops", text_es: "Salta", correct: false }, { text: "It runs", text_es: "Corre", correct: false } ] },
+            { image: "https://placehold.co/600x400/ea580c/ffffff?text=Tiger", question: "What covers the tiger's skin?", question_es: "¿Qué cubre la piel del tigre?", options: [ { text: "Hair", text_es: "Pelo", correct: true }, { text: "Scales", text_es: "Escamas", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/2563eb/ffffff?text=Jellyfish", question: "How does a jellyfish move?", question_es: "¿Cómo se mueve una medusa?", options: [ { text: "It swims", text_es: "Nada", correct: true }, { text: "It walks", text_es: "Camina", correct: false }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false } ] },
+            { image: "https://placehold.co/600x400/9d174d/ffffff?text=Pig", question: "Does a pig have feathers?", question_es: "¿Un cerdo tiene plumas?", options: [ { text: "No 👎", text_es: "No 👎", correct: true }, { text: "Yes 👍", text_es: "Sí 👍", correct: false } ] },
+            { image: "https://placehold.co/600x400/a16207/ffffff?text=Monkey", question: "How does a monkey move?", question_es: "¿Cómo se mueve un mono?", options: [ { text: "It climbs", text_es: "Trepa", correct: true }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It slithers", text_es: "Se desliza", correct: false } ] },
+            { image: "https://placehold.co/600x400/0d9488/ffffff?text=Seahorse", question: "What covers the seahorse's skin?", question_es: "¿Qué cubre la piel del caballito de mar?", options: [ { text: "Bony plates", text_es: "Placas óseas", correct: true }, { text: "Hair", text_es: "Pelo", correct: false }, { text: "Feathers", text_es: "Plumas", correct: false }, { text: "Bare skin", text_es: "Piel desnuda", correct: false } ] },
+            { image: "https://placehold.co/600x400/6d28d9/ffffff?text=Rabbit", question: "How does a rabbit move?", question_es: "¿Cómo se mueve un conejo?", options: [ { text: "It hops", text_es: "Salta", correct: true }, { text: "It flies", text_es: "Vuela", correct: false }, { text: "It swims", text_es: "Nada", correct: false }, { text: "It crawls", text_es: "Se arrastra", correct: false } ] }
+        ];
+
+        let score = 0;
+        let currentGameIndex = 0;
+        let shuffledGames = [];
+
+        const startScreen = document.getElementById('start-screen');
+        const gameArea = document.getElementById('game-area');
+        const finalScreen = document.getElementById('final-screen');
+        const scoreDisplay = document.getElementById('score');
+        const animalImage = document.getElementById('animal-image');
+        const questionText = document.getElementById('question');
+        const questionEsText = document.getElementById('question-es');
+        const optionsContainer = document.getElementById('options');
+        const feedbackModal = document.getElementById('feedback-modal');
+        const feedbackContent = document.getElementById('feedback-content');
+        const progressBar = document.getElementById('progress-bar');
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function startGame() {
+            shuffledGames = shuffleArray([...gameData]);
+            startScreen.classList.add('hidden');
+            gameArea.classList.remove('hidden');
+            loadGame(currentGameIndex);
+        }
+
+        function updateProgressBar() {
+            const progress = ((currentGameIndex) / shuffledGames.length) * 100;
+            progressBar.style.width = `${progress}%`;
+        }
+
+        function loadGame(index) {
+            updateProgressBar();
+            optionsContainer.innerHTML = '';
+            const game = shuffledGames[index];
+            animalImage.src = game.image;
+            animalImage.onerror = () => { animalImage.src = 'https://placehold.co/600x400/fee2e2/ef4444?text=Image+Not+Found'; }
+            questionText.textContent = game.question;
+            questionEsText.textContent = game.question_es;
+
+            game.options.forEach(option => {
+                const button = document.createElement('button');
+                button.classList.add('option-btn', 'w-full', 'p-4', 'text-lg', 'font-bold', 'text-white', 'bg-blue-500', 'hover:bg-blue-600', 'rounded-xl', 'shadow-md');
+                button.innerHTML = `${option.text} <br> <small class="font-normal">(${option.text_es})</small>`;
+                button.onclick = (event) => selectAnswer(option.correct, event.target);
+                optionsContainer.appendChild(button);
+            });
+        }
+        
+        function showFeedback(correct) {
+            feedbackContent.innerHTML = correct ? 'Correct! ✅<br><span class="text-3xl">¡Correcto!</span>' : 'Try Again ❌<br><span class="text-3xl">Intenta de Nuevo</span>';
+            feedbackContent.parentElement.classList.toggle('bg-green-500', correct);
+            feedbackContent.parentElement.classList.toggle('bg-red-500', !correct);
+            feedbackModal.classList.remove('hidden');
+            feedbackModal.classList.remove('opacity-0');
+
+            setTimeout(() => {
+                feedbackModal.classList.add('opacity-0');
+                setTimeout(() => feedbackModal.classList.add('hidden'), 300);
+            }, 1000);
+        }
+
+        function selectAnswer(isCorrect, button) {
+             // Disable all buttons to prevent multiple clicks
+            const buttons = optionsContainer.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            if (isCorrect) {
+                score += 10;
+                button.classList.add('correct');
+                showFeedback(true);
+            } else {
+                score -= 5;
+                if(score < 0) score = 0; // Don't let score go below 0
+                button.classList.add('incorrect');
+                showFeedback(false);
+            }
+            scoreDisplay.textContent = score;
+
+            setTimeout(() => {
+                currentGameIndex++;
+                if (currentGameIndex < shuffledGames.length) {
+                    loadGame(currentGameIndex);
+                } else {
+                    updateProgressBar(); // to fill the bar at the end
+                    showFinalScreen();
+                }
+            }, 1500); // Wait 1.5 seconds before loading next question
+        }
+        
+        function showFinalScreen() {
+            gameArea.classList.add('hidden');
+            finalScreen.classList.remove('hidden');
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('final-score-es').textContent = score;
+        }
+
+        function restartGame() {
+            score = 0;
+            currentGameIndex = 0;
+            scoreDisplay.textContent = score;
+            finalScreen.classList.add('hidden');
+            startScreen.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
+
