@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de una fuente amigable para niños (Google Fonts) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <title>Math Practice Games 🎮 Práctica de Matemáticas</title>
+    
+    <style>
+        /* Usamos la fuente 'Fredoka' que es más redondita y amigable */
+        body {
+            font-family: 'Fredoka', sans-serif;
+            /* Un fondo degradado suave */
+            background: linear-gradient(135deg, #FFF1F2 0%, #E0F2FE 100%);
+        }
+        
+        /* Estilo para el input de la respuesta */
+        .game-input {
+            width: 100px;
+            font-size: 2.25rem; /* 36px */
+            font-weight: 700;
+            text-align: center;
+            border: 3px solid #60A5FA; /* blue-400 */
+            border-radius: 0.75rem; /* rounded-xl */
+            padding: 0.5rem;
+            margin: 0 0.5rem;
+            /* Evita que aparezcan las flechas de 'number' input */
+            -moz-appearance: textfield;
+        }
+        .game-input::-webkit-outer-spin-button,
+        .game-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Contenedor del problema de matemáticas */
+        .problem-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem; /* 40px */
+            font-weight: 700;
+            color: #1F2937; /* gray-800 */
+            margin-top: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap; /* Para que se ajuste en pantallas pequeñas */
+        }
+        
+        /* Estilo para botones de opción múltiple */
+        .choice-button {
+            display: block;
+            width: 100%;
+            background-color: #3B82F6; /* blue-500 */
+            color: white;
+            padding: 1rem;
+            border-radius: 0.75rem; /* rounded-xl */
+            font-weight: 700;
+            font-size: 1.25rem; /* text-xl */
+            margin-bottom: 0.75rem; /* mb-3 */
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .choice-button:hover {
+            background-color: #2563EB; /* blue-600 */
+            transform: translateY(-2px);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.1);
+        }
+        .choice-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <!-- 1. Marcador (Scoreboard) -->
+    <header id="scoreboard" class="bg-white/80 backdrop-blur-sm shadow-lg p-4 rounded-xl fixed top-4 left-4 right-4 z-10">
+        <div class="max-w-3xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold text-purple-600">Let's Practice Math! 🤩</h1>
+                <p class="text-xs md:text-sm text-gray-500">¡Vamos a practicar matemáticas! 🤩</p>
+            </div>
+            <!-- Conteo de Pregunta -->
+            <div class="text-center">
+                 <span class="text-lg md:text-xl font-bold text-gray-700">QUESTION:</span>
+                <p class="text-xs md:text-sm text-gray-500">(PREGUNTA:)</p>
+                <span id="question-counter" class="text-3xl font-bold text-blue-500">1 / 60</span>
+            </div>
+            <div class="text-right">
+                <span class="text-lg md:text-xl font-bold text-gray-700">SCORE:</span>
+                <p class="text-xs md:text-sm text-gray-500">(PUNTAJE:)</p>
+                <span id="score" class="text-3xl font-bold text-green-500">0</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- 2. Contenedor Principal del Juego -->
+    <main id="game-container" class="mt-40 md:mt-44 max-w-lg mx-auto bg-white p-6 md:p-8 rounded-2xl shadow-xl transition-all duration-300 min-h-[300px]">
+        <!-- El contenido del juego se cargará aquí por JavaScript -->
+    </main>
+
+    <!-- 3. Mensaje de Feedback (Correcto/Incorrecto) -->
+    <div id="feedback-message" class="fixed inset-0 bg-black/60 flex items-center justify-center p-4 z-20 transition-opacity duration-300 hidden opacity-0">
+        <div id="feedback-box" class="bg-white rounded-2xl p-8 shadow-2xl text-center max-w-sm transform scale-90 transition-all duration-300">
+            <div id="feedback-emoji" class="text-6xl mb-4"></div>
+            <p id="feedback-text" class="text-2xl font-bold"></p>
+        </div>
+    </div>
+
+    <!-- 4. Lógica del Juego (JavaScript) -->
+    <script>
+        // --- Variables del Estado del Juego ---
+        let score = 0;
+        let currentGameIndex = 0;
+        let correctCount = 0;
+        let incorrectCount = 0;
+        let allGames = [];
+        const TOTAL_GAMES = 60;
+
+        // --- Referencias a elementos del DOM ---
+        const scoreElement = document.getElementById('score');
+        const questionCounterElement = document.getElementById('question-counter');
+        const gameContainer = document.getElementById('game-container');
+        const feedbackMessage = document.getElementById('feedback-message');
+        const feedbackBox = document.getElementById('feedback-box');
+        const feedbackEmoji = document.getElementById('feedback-emoji');
+        const feedbackText = document.getElementById('feedback-text');
+
+        // --- Funciones de Utilidad ---
+
+        /**
+         * Genera un número entero aleatorio entre min (incluido) y max (incluido).
+         */
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        /**
+         * Baraja (reordena aleatoriamente) un array.
+         */
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        // --- Generador de Juegos ---
+
+        /**
+         * Genera un set de juegos aleatorios.
+         */
+        function generateGames(count) {
+            const games = [];
+            const gameTypes = ['fill_in_blank', 'multiple_choice', 'true_false'];
+            const emojis = ['🍎', '🍊', '🤔', '🚀', '🧊', '💡', '❓', '👻', '🦋', '🧠', '🐶', '🐱', '🦖', '⚽️', '🎉', '🏆', '💎', '🍕', '🍔', '🍦'];
+
+            for (let i = 0; i < count; i++) {
+                const gameType = gameTypes[getRandomInt(0, gameTypes.length - 1)];
+                const a = getRandomInt(1, 15);
+                const b = getRandomInt(1, 15);
+                const c = a + b; // El resultado de la suma
+                const emoji = emojis[getRandomInt(0, emojis.length - 1)];
+                let game = {};
+
+                switch (gameType) {
+                    case 'multiple_choice':
+                        // Genera opciones incorrectas, asegurándose de que no se repitan y no sean la correcta
+                        let options = [c];
+                        while (options.length < 4) {
+                            let wrongOption = getRandomInt(Math.max(1, c - 5), c + 5);
+                            if (!options.includes(wrongOption)) {
+                                options.push(wrongOption);
+                            }
+                        }
+                        
+                        // Decide si preguntar por suma o resta
+                        if (Math.random() < 0.5) {
+                            // Pregunta de suma
+                            game = {
+                                type: 'multiple_choice',
+                                en: `What is ${a} + ${b}? ${emoji}`,
+                                es: `¿Cuánto es ${a} + ${b}? ${emoji}`,
+                                problem: `${a} + ${b} = ?`,
+                                options: shuffle(options),
+                                answer: c
+                            };
+                        } else {
+                            // Pregunta de resta
+                            options = [a];
+                            while (options.length < 4) {
+                                let wrongOption = getRandomInt(Math.max(1, a - 3), a + 3);
+                                if (!options.includes(wrongOption)) {
+                                    options.push(wrongOption);
+                                }
+                            }
+                            game = {
+                                type: 'multiple_choice',
+                                en: `What is ${c} - ${b}? ${emoji}`,
+                                es: `¿Cuánto es ${c} - ${b}? ${emoji}`,
+                                problem: `${c} - ${b} = ?`,
+                                options: shuffle(options),
+                                answer: a
+                            };
+                        }
+                        break;
+
+                    case 'true_false':
+                        const isTrue = Math.random() < 0.5;
+                        if (isTrue) {
+                            // Genera una ecuación verdadera
+                            game = {
+                                type: 'true_false',
+                                en: `Is this correct? ${a} + ${b} = ${c} ${emoji}`,
+                                es: `¿Es esto correcto? ${a} + ${b} = ${c} ${emoji}`,
+                                problem: `${a} + ${b} = ${c}`,
+                                answer: true
+                            };
+                        } else {
+                            // Genera una ecuación falsa
+                            let wrongC = c + getRandomInt(-3, 3);
+                            if (wrongC === c) wrongC++; // Asegura que sea falsa
+                            game = {
+                                type: 'true_false',
+                                en: `Is this correct? ${a} + ${b} = ${wrongC} ${emoji}`,
+                                es: `¿Es esto correcto? ${a} + ${b} = ${wrongC} ${emoji}`,
+                                problem: `${a} + ${b} = ${wrongC}`,
+                                answer: false
+                            };
+                        }
+                        break;
+
+                    case 'fill_in_blank':
+                    default:
+                        // Decide qué parte de la "familia de operaciones" preguntar
+                        const blankType = getRandomInt(1, 4);
+                        if (blankType === 1) { // Suma (resultado faltante)
+                            game = {
+                                type: 'fill_in_blank',
+                                en: `What is ${a} + ${b}? ${emoji}`, 
+                                es: `¿Cuánto es ${a} + ${b}? ${emoji}`,
+                                problem: `${a} + ${b} = <input type="number" id="answer-input" class="game-input" autofocus>`,
+                                answer: c
+                            };
+                        } else if (blankType === 2) { // Resta (resultado faltante)
+                            game = {
+                                type: 'fill_in_blank',
+                                en: `What is ${c} - ${a}? ${emoji}`, 
+                                es: `¿Cuánto es ${c} - ${a}? ${emoji}`,
+                                problem: `${c} - ${a} = <input type="number" id="answer-input" class="game-input" autofocus>`,
+                                answer: b
+                            };
+                        } else if (blankType === 3) { // Suma (número faltante)
+                            game = {
+                                type: 'fill_in_blank',
+                                en: `What number is missing? ${emoji}`, 
+                                es: `¿Qué número falta? ${emoji}`,
+                                problem: `<input type="number" id="answer-input" class="game-input" autofocus> + ${b} = ${c}`,
+                                answer: a
+                            };
+                        } else { // Resta (número faltante)
+                             game = {
+                                type: 'fill_in_blank',
+                                en: `What number is missing? ${emoji}`, 
+                                es: `¿Qué número falta? ${emoji}`,
+                                problem: `${c} - <input type="number" id="answer-input" class="game-input" autofocus> = ${a}`,
+                                answer: b
+                            };
+                        }
+                        break;
+                }
+                games.push(game);
+            }
+            return games;
+        }
+
+
+        // --- Funciones del Flujo del Juego ---
+
+        /**
+         * Carga el juego actual en el contenedor.
+         */
+        function loadGame(index) {
+            // Si se acabaron los juegos, muestra la pantalla final
+            if (index >= allGames.length) {
+                showFinalScreen();
+                return;
+            }
+
+            const game = allGames[index];
+            questionCounterElement.innerText = `${index + 1} / ${TOTAL_GAMES}`;
+
+            let gameHTML = `
+                <!-- Pregunta y traducción -->
+                <p class="text-xl md:text-2xl font-bold text-gray-700 text-center">${game.en}</p>
+                <p class="text-sm md:text-base text-gray-500 text-center mb-6">${game.es}</p>
+                
+                <!-- El problema matemático (se llena abajo) -->
+                <div id="problem-area"></div>
+            `;
+            gameContainer.innerHTML = gameHTML;
+            
+            const problemArea = document.getElementById('problem-area');
+
+            // Renderiza el tipo de juego
+            switch (game.type) {
+                case 'fill_in_blank':
+                    problemArea.innerHTML = `
+                        <div class="problem-container">
+                            ${game.problem}
+                        </div>
+                        <button onclick="checkAnswer()" class="choice-button game-button">
+                            Check Answer!
+                            <br><span class="font-normal text-sm">¡Revisar Respuesta!</span>
+                        </button>
+                    `;
+                    // Permite enviar con la tecla "Enter"
+                    const inputField = document.getElementById('answer-input');
+                    if (inputField) {
+                        inputField.focus();
+                        inputField.addEventListener('keyup', function(event) {
+                            if (event.key === 'Enter') {
+                                checkAnswer();
+                            }
+                        });
+                    }
+                    break;
+                
+                case 'multiple_choice':
+                    problemArea.innerHTML = `
+                        <div class="problem-container !mb-4">${game.problem}</div>
+                        <div class="grid grid-cols-2 gap-3">
+                            ${game.options.map(option => `
+                                <button onclick="checkAnswer(${option})" class="choice-button game-button !text-2xl !py-6">
+                                    ${option}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                    break;
+
+                case 'true_false':
+                     problemArea.innerHTML = `
+                        <div class="problem-container !text-4xl">${game.problem}</div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="checkAnswer(true)" class="choice-button game-button !bg-green-500 hover:!bg-green-600 !text-2xl !py-6">
+                                True
+                                <br><span class="font-normal text-sm">Verdadero</span>
+                            </button>
+                             <button onclick="checkAnswer(false)" class="choice-button game-button !bg-red-500 hover:!bg-red-600 !text-2xl !py-6">
+                                False
+                                <br><span class="font-normal text-sm">Falso</span>
+                            </button>
+                        </div>
+                    `;
+                    break;
+            }
+        }
+
+        /**
+         * Deshabilita todos los botones de respuesta.
+         */
+        function disableInputs() {
+            const buttons = document.querySelectorAll('.game-button');
+            buttons.forEach(button => button.disabled = true);
+            const input = document.getElementById('answer-input');
+            if (input) input.disabled = true;
+        }
+
+        /**
+         * Revisa la respuesta del usuario.
+         * @param {number | boolean} [userAnswer] - La respuesta para opción múltiple o V/F.
+         */
+        function checkAnswer(userAnswer) {
+            const game = allGames[currentGameIndex];
+            const correctAnswer = game.answer;
+            let providedAnswer;
+
+            if (game.type === 'fill_in_blank') {
+                const inputField = document.getElementById('answer-input');
+                providedAnswer = parseInt(inputField.value);
+            } else {
+                providedAnswer = userAnswer;
+            }
+
+            disableInputs();
+
+            // Caso de input vacío
+            if (game.type === 'fill_in_blank' && isNaN(providedAnswer)) {
+                showFeedback("Please enter a number! 🔢<br>¡Por favor, ingresa un número! 🔢", "neutral");
+                setTimeout(() => {
+                    feedbackMessage.style.opacity = 0;
+                    feedbackBox.style.transform = 'scale(0.9)';
+                    setTimeout(() => {
+                        feedbackMessage.style.display = 'none';
+                        // No avanza, solo recarga el juego actual para re-habilitar
+                        loadGame(currentGameIndex); 
+                    }, 300);
+                }, 1500);
+                return;
+            }
+
+            // Compara respuestas
+            if (providedAnswer === correctAnswer) {
+                score += 10;
+                correctCount++;
+                showFeedback(`Correct! +10 points! 🎉<br>¡Correcto! +10 puntos! 🎉`, "correct");
+            } else {
+                score -= 5;
+                incorrectCount++;
+                let feedbackMsg = `Oops! The answer was ${correctAnswer}. -5 points 😢<br>¡Uy! La respuesta era ${correctAnswer}. -5 puntos 😢`;
+                if (game.type === 'true_false') {
+                     feedbackMsg = `Oops! The statement was ${correctAnswer}. -5 points 😢<br>¡Uy! La respuesta era ${correctAnswer}. -5 puntos 😢`;
+                }
+                showFeedback(feedbackMsg, "incorrect");
+            }
+
+            updateScore();
+            currentGameIndex++;
+            
+            // Carga el siguiente juego después de un retraso
+            setTimeout(() => {
+                feedbackMessage.style.opacity = 0;
+                feedbackBox.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    feedbackMessage.style.display = 'none';
+                    loadGame(currentGameIndex);
+                }, 300); // Espera que la animación de salida termine
+            }, 2000);
+        }
+
+        /**
+         * Muestra la pantalla de fin de juego.
+         */
+        function showFinalScreen() {
+            gameContainer.innerHTML = `
+                <h2 class="text-3xl font-bold text-center mb-4 text-purple-600">Game Over! 🥳</h2>
+                <p class="text-lg text-gray-600 text-center mb-6">¡Juego Terminado! 🥳</p>
+                
+                <p class="text-2xl font-bold text-center mb-4">
+                    Your final score is: ${score} 🏆
+                    <br><span class="text-lg text-gray-500">Tu puntaje final es: ${score} 🏆</span>
+                </p>
+                
+                <div class="flex justify-around mb-8">
+                    <div class="text-center">
+                        <p class="text-4xl font-bold text-green-500">${correctCount}</p>
+                        <p class="text-sm text-gray-500">CORRECT<br>(CORRECTAS)</p>
+                    </div>
+                     <div class="text-center">
+                        <p class="text-4xl font-bold text-red-500">${incorrectCount}</p>
+                        <p class="text-sm text-gray-500">INCORRECT<br>(INCORRECTAS)</p>
+                    </div>
+                </div>
+
+                <button onclick="restartGame()" class="choice-button !bg-green-500 hover:!bg-green-600">
+                    Play Again?
+                    <br><span class="font-normal text-sm">¿Jugar de nuevo?</span>
+                </button>
+            `;
+        }
+
+        /**
+         * Reinicia el juego.
+         */
+        function restartGame() {
+            score = 0;
+            currentGameIndex = 0;
+            correctCount = 0;
+            incorrectCount = 0;
+            allGames = generateGames(TOTAL_GAMES); // Genera nuevos juegos
+            updateScore();
+            loadGame(currentGameIndex);
+        }
+
+        /**
+         * Actualiza el puntaje en la pantalla.
+         */
+        function updateScore() {
+            scoreElement.innerText = score;
+            if (score < 0) {
+                scoreElement.classList.remove('text-green-500');
+                scoreElement.classList.add('text-red-500');
+            } else {
+                scoreElement.classList.remove('text-red-500');
+                scoreElement.classList.add('text-green-500');
+            }
+        }
+
+        /**
+         * Muestra el mensaje de feedback (correcto/incorrecto/neutral).
+         */
+        function showFeedback(message, type) {
+            feedbackText.innerHTML = message;
+            feedbackBox.classList.remove('border-green-400', 'border-red-400', 'border-blue-400');
+            
+            if (type === 'correct') {
+                feedbackEmoji.innerText = '✅';
+                feedbackBox.classList.add('border-t-8', 'border-green-400');
+            } else if (type === 'incorrect') {
+                feedbackEmoji.innerText = '❌';
+                feedbackBox.classList.add('border-t-8', 'border-red-400');
+            } else { // 'neutral'
+                feedbackEmoji.innerText = '🔢';
+                feedbackBox.classList.add('border-t-8', 'border-blue-400');
+            }
+
+            feedbackMessage.style.display = 'flex';
+            setTimeout(() => {
+                feedbackMessage.style.opacity = 1;
+                feedbackBox.style.transform = 'scale(1)';
+            }, 10);
+        }
+
+        // --- Carga Inicial del Juego ---
+        document.addEventListener('DOMContentLoaded', () => {
+            allGames = generateGames(TOTAL_GAMES);
+            loadGame(currentGameIndex);
+            updateScore();
+        });
+
+    </script>
+</body>
+</html>
+
