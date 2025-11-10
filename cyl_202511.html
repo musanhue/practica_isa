@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Juegos de Dictado 🇬🇧</title>
+    <!-- Incluimos Tailwind CSS para un diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Usamos la fuente Inter para un look más amigable */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Definimos animaciones personalizadas */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-10px); }
+            20%, 40%, 60%, 80% { transform: translateX(10px); }
+        }
+        
+        @keyframes tada {
+            0% { transform: scale(1); }
+            10%, 20% { transform: scale(0.9) rotate(-3deg); }
+            30%, 50%, 70%, 90% { transform: scale(1.1) rotate(3deg); }
+            40%, 60%, 80% { transform: scale(1.1) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+
+        .shake-anim {
+            animation: shake 0.5s ease-in-out;
+        }
+        
+        .tada-anim {
+            animation: tada 1s ease-in-out;
+        }
+
+        /* Estilos para el input de texto */
+        .spell-input {
+            @apply w-full max-w-xs p-4 text-2xl font-bold text-center border-4 border-purple-300 rounded-lg shadow-inner focus:outline-none focus:ring-4 focus:ring-purple-400;
+        }
+
+        /* Estilo para los botones de opción */
+        .option-button {
+            @apply w-full p-4 text-xl font-semibold text-white bg-blue-500 rounded-lg shadow-lg transform transition-transform hover:scale-105 active:scale-95;
+        }
+
+        .emoji-button {
+            @apply text-6xl p-4 bg-white rounded-2xl shadow-lg transform transition-transform hover:scale-110 active:scale-95;
+        }
+
+        /* Ocultar flechas en input[type=number] (aunque no usamos, es buena práctica) */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-pink-200 via-purple-200 to-blue-300 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Se ajustó el ancho máximo para pantallas grandes (lg:max-w-3xl) -->
+    <div class="w-full max-w-2xl lg:max-w-3xl mx-auto">
+        
+        <!-- Contenedor del Puntaje -->
+        <div id="score-container" class="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg p-4 mb-6 flex justify-between items-center sticky top-4 z-10">
+            <h1 class="text-xl sm:text-2xl font-bold text-purple-700">Juegos de Dictado 🇬🇧</h1>
+            <div id="score-display" class="text-xl sm:text-2xl font-bold text-right text-gray-800">
+                Puntaje: 0 🌟
+            </div>
+        </div>
+
+        <!-- Contenedor Principal del Juego -->
+        <div id="game-card" class="bg-white rounded-2xl shadow-xl p-6 sm:p-10 text-center relative overflow-hidden">
+            
+            <!-- Pantalla de Inicio -->
+            <div id="start-screen">
+                <div class="text-8xl mb-4">🎉👕👖🧦👟</div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">¡Lista para practicar!</h2>
+                <p class="text-lg text-gray-600 mb-8">¡Vamos a jugar 20 rondas para aprender las palabras de ropa! 🧥🧢</p>
+                <button id="start-button" class="w-full max-w-sm mx-auto p-4 bg-green-500 text-white text-2xl font-bold rounded-xl shadow-lg transform transition-transform hover:scale-105">
+                    ¡Empezar!
+                </button>
+            </div>
+
+            <!-- Pantalla del Juego (oculta al inicio) -->
+            <div id="game-screen" class="hidden">
+                <div id="question-number" class="text-lg font-semibold text-gray-500 mb-4">Juego 1 / 20</div>
+                <h2 id="prompt" class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 min-h-[4rem]"></h2>
+                
+                <div id="emoji-display" class="text-8xl sm:text-9xl mb-8 min-h-[7rem]"></div>
+
+                <div id="answer-options" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <!-- Las opciones se generarán con JavaScript aquí -->
+                </div>
+            </div>
+
+            <!-- Pantalla Final (oculta al inicio) -->
+            <div id="end-screen" class="hidden">
+                <div id="end-emoji" class="text-8xl mb-4">🏆</div>
+                <h2 class="text-3xl font-bold text-gray-800 mb-4">¡Terminaste!</h2>
+                <p id="final-score-text" class="text-2xl text-gray-600 mb-8">Tu puntaje final es: 0 🌟</p>
+                <button id="restart-button" class="w-full max-w-sm mx-auto p-4 bg-green-500 text-white text-2xl font-bold rounded-xl shadow-lg transform transition-transform hover:scale-105">
+                    Jugar de Nuevo
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Modal de Feedback (oculto) -->
+    <div id="feedback-modal" class="hidden fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+        <div id="feedback-box" class="bg-white rounded-2xl shadow-xl p-8 text-center">
+            <div id="feedback-emoji" class="text-7xl mb-4"></div>
+            <div id="feedback-text" class="text-3xl font-bold"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // --- 1. Definición de Palabras y Constantes ---
+            
+            const WORDS_LIST = [
+                { word: 't-shirt', emoji: '👕', alt: [] },
+                { word: 'pants', emoji: '👖', alt: ['jeans'] },
+                { word: 'socks', emoji: '🧦', alt: [] },
+                { word: 'skirt', emoji: '👗', alt: [] },
+                { word: 'shoes', emoji: '👟', alt: [] },
+                { word: 'sweater', emoji: '👚', alt: [] }, // 👚 es 'blusa', pero es un buen emoji para 'sweater'
+                { word: 'jacket', emoji: '🧥', alt: [] },
+                { word: 'cap', emoji: '🧢', alt: [] },
+                { word: 'jeans', emoji: '👖', alt: ['pants'] },
+                { word: 'shorts', emoji: '🩳', alt: [] }
+            ];
+
+            const TOTAL_GAMES = 20;
+            const POINTS_CORRECT = 10;
+            const POINTS_INCORRECT = -5;
+
+            // --- 2. Variables de Estado ---
+
+            let score = 0;
+            let currentGameIndex = 0;
+            let gameDeck = []; // Aquí guardaremos los 20 juegos
+
+            // --- 3. Referencias al DOM ---
+
+            const scoreDisplay = document.getElementById('score-display');
+            const startScreen = document.getElementById('start-screen');
+            const gameScreen = document.getElementById('game-screen');
+            const endScreen = document.getElementById('end-screen');
+            const startButton = document.getElementById('start-button');
+            const restartButton = document.getElementById('restart-button');
+            
+            const questionNumberEl = document.getElementById('question-number');
+            const promptEl = document.getElementById('prompt');
+            const emojiDisplay = document.getElementById('emoji-display');
+            const answerOptions = document.getElementById('answer-options');
+
+            const feedbackModal = document.getElementById('feedback-modal');
+            const feedbackBox = document.getElementById('feedback-box');
+            const feedbackEmoji = document.getElementById('feedback-emoji');
+            const feedbackText = document.getElementById('feedback-text');
+
+            const finalScoreText = document.getElementById('final-score-text');
+            const endEmoji = document.getElementById('end-emoji');
+
+            // --- 4. Lógica Principal del Juego ---
+
+            // Función para barajar un array (Fisher-Yates)
+            function shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            // Crear el mazo de 20 juegos
+            function createGameDeck() {
+                // Duplicamos la lista de palabras para tener 20 juegos
+                let baseDeck = [...WORDS_LIST, ...WORDS_LIST];
+                shuffle(baseDeck);
+                
+                gameDeck = baseDeck.map(wordData => {
+                    // Asignamos un tipo de juego aleatorio (0, 1, 2, o 3)
+                    const gameType = Math.floor(Math.random() * 4);
+                    return { wordData, gameType };
+                });
+            }
+
+            // Iniciar el juego
+            function initGame() {
+                score = 0;
+                currentGameIndex = 0;
+                updateScore(0);
+                createGameDeck();
+                
+                startScreen.classList.add('hidden');
+                endScreen.classList.add('hidden');
+                gameScreen.classList.remove('hidden');
+                
+                showNextGame();
+            }
+
+            // Mostrar el siguiente juego
+            function showNextGame() {
+                // Limpiamos el área de juego
+                promptEl.textContent = '';
+                emojiDisplay.textContent = '';
+                answerOptions.innerHTML = '';
+                
+                if (currentGameIndex >= TOTAL_GAMES) {
+                    showFinalScore();
+                    return;
+                }
+
+                questionNumberEl.textContent = `Juego ${currentGameIndex + 1} / ${TOTAL_GAMES}`;
+                const { wordData, gameType } = gameDeck[currentGameIndex];
+
+                // *** NUEVA FUNCIÓN: Reproducir la palabra en inglés ***
+                speak(wordData.word);
+
+                // Elegir el tipo de juego
+                switch (gameType) {
+                    case 0: displayGame_ImageToWord(wordData); break;
+                    case 1: displayGame_WordToImage(wordData); break;
+                    case 2: displayGame_Spelling(wordData); break;
+                    case 3: displayGame_Dictation(wordData); break;
+                }
+            }
+
+            // --- 5. Funciones para Mostrar cada Tipo de Juego ---
+
+            // JUEGO 1: Adivina la palabra (con imagen)
+            function displayGame_ImageToWord(wordData) {
+                promptEl.textContent = "¿Qué es esto? 🤔";
+                emojiDisplay.textContent = wordData.emoji;
+
+                // Obtenemos 3 palabras incorrectas
+                let options = getDistractorWords(wordData, 3);
+                options.push(wordData.word); // Añadimos la correcta
+                shuffle(options);
+
+                options.forEach(word => {
+                    const button = document.createElement('button');
+                    button.textContent = word;
+                    button.className = 'option-button bg-blue-500';
+                    button.onclick = () => checkAnswer(word, wordData);
+                    answerOptions.appendChild(button);
+                });
+            }
+
+            // JUEGO 2: Adivina la imagen (con palabra)
+            function displayGame_WordToImage(wordData) {
+                promptEl.textContent = `¿Cuál es '${wordData.word}'? 🧐`;
+                
+                // Obtenemos 3 emojis incorrectos
+                let options = getDistractorEmojis(wordData, 3);
+                options.push(wordData); // Añadimos el objeto correcto
+                shuffle(options);
+
+                answerOptions.className = 'grid grid-cols-2 gap-4'; // Re-ajustamos la grilla para emojis
+
+                options.forEach(optionData => {
+                    const button = document.createElement('button');
+                    button.textContent = optionData.emoji;
+                    button.className = 'emoji-button';
+                    // Pasamos el emoji como respuesta
+                    button.onclick = () => checkAnswer(optionData.emoji, wordData);
+                    answerOptions.appendChild(button);
+                });
+            }
+
+            // JUEGO 3: Completa la palabra (Spelling)
+            function displayGame_Spelling(wordData) {
+                promptEl.textContent = "Completa la palabra ✏️";
+                emojiDisplay.textContent = wordData.emoji;
+                
+                const blankWord = createBlanks(wordData.word);
+                const blankDisplay = document.createElement('div');
+                blankDisplay.className = 'text-3xl sm:text-4xl font-mono tracking-widest text-gray-700 mb-6';
+                blankDisplay.textContent = blankWord;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'spell-input';
+                input.className = 'spell-input';
+                input.setAttribute('autocapitalize', 'none'); // Importante para tablets
+                input.setAttribute('autocomplete', 'off');
+                input.setAttribute('autocorrect', 'off');
+                input.setAttribute('spellcheck', 'false');
+
+                const checkButton = document.createElement('button');
+                checkButton.textContent = "Revisar 👍";
+                checkButton.className = "w-full max-w-xs mx-auto p-4 mt-4 bg-purple-500 text-white text-xl font-bold rounded-xl shadow-lg transform transition-transform hover:scale-105";
+
+                answerOptions.className = 'grid grid-cols-1 gap-4';
+                answerOptions.appendChild(blankDisplay);
+                answerOptions.appendChild(input);
+                answerOptions.appendChild(checkButton);
+
+                // Permitir presionar "Enter"
+                input.onkeyup = (e) => {
+                    if (e.key === 'Enter') checkButton.click();
+                };
+                checkButton.onclick = () => {
+                    const answer = input.value.toLowerCase().trim();
+                    if (answer) {
+                        checkAnswer(answer, wordData);
+                    }
+                };
+                
+                // Enfocar el input automáticamente
+                setTimeout(() => input.focus(), 100);
+            }
+
+            // JUEGO 4: Dictado (Escribir la palabra)
+            function displayGame_Dictation(wordData) {
+                promptEl.textContent = "Escribe la palabra... ✍️";
+                emojiDisplay.textContent = wordData.emoji;
+                
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'dictation-input';
+                input.className = 'spell-input';
+                input.placeholder = "Escribe aquí...";
+                input.setAttribute('autocapitalize', 'none');
+                input.setAttribute('autocomplete', 'off');
+                input.setAttribute('autocorrect', 'off');
+                input.setAttribute('spellcheck', 'false');
+
+                const checkButton = document.createElement('button');
+                checkButton.textContent = "Revisar 👍";
+                checkButton.className = "w-full max-w-xs mx-auto p-4 mt-4 bg-purple-500 text-white text-xl font-bold rounded-xl shadow-lg transform transition-transform hover:scale-105";
+
+                answerOptions.className = 'grid grid-cols-1 gap-4';
+                answerOptions.appendChild(input);
+                answerOptions.appendChild(checkButton);
+                
+                input.onkeyup = (e) => {
+                    if (e.key === 'Enter') checkButton.click();
+                };
+                checkButton.onclick = () => {
+                    const answer = input.value.toLowerCase().trim();
+                    if (answer) {
+                        checkAnswer(answer, wordData);
+                    }
+                };
+                
+                setTimeout(() => input.focus(), 100);
+            }
+            
+            // --- 6. Funciones de Ayuda ---
+
+            // *** NUEVA FUNCIÓN: API de Voz para pronunciar texto ***
+            function speak(text) {
+                // Comprobamos si el navegador soporta la síntesis de voz
+                if ('speechSynthesis' in window) {
+                    // Detener cualquier audio anterior
+                    window.speechSynthesis.cancel();
+                    
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = 'en-US'; // Aseguramos el idioma inglés
+                    utterance.rate = 0.9;     // Un poco más lento para que sea claro
+                    utterance.pitch = 1.1;    // Un tono ligeramente más amigable
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    console.log("Tu navegador no soporta la síntesis de voz.");
+                }
+            }
+
+            // Obtener palabras distractoras
+            function getDistractorWords(correctWordData, count) {
+                let distractors = [];
+                let shuffledList = shuffle([...WORDS_LIST]);
+                for (let item of shuffledList) {
+                    // Evitar la palabra correcta y sus alternativas
+                    if (item.word !== correctWordData.word && !correctWordData.alt.includes(item.word)) {
+                        distractors.push(item.word);
+                    }
+                    if (distractors.length >= count) break;
+                }
+                return distractors;
+            }
+
+            // Obtener emojis distractores
+            function getDistractorEmojis(correctWordData, count) {
+                let distractors = [];
+                let shuffledList = shuffle([...WORDS_LIST]);
+                for (let item of shuffledList) {
+                    if (item.emoji !== correctWordData.emoji) {
+                        // Usamos el objeto completo para tener el emoji
+                        distractors.push(item); 
+                    }
+                    if (distractors.length >= count) break;
+                }
+                return distractors;
+            }
+
+            // Crear la palabra con espacios (ej: s _ o e s)
+            function createBlanks(word) {
+                if (word.length <= 3) {
+                    return word[0] + ' _ '.repeat(word.length - 1);
+                }
+                let blanks = word[0]; // Primera letra
+                for (let i = 1; i < word.length - 1; i++) {
+                    // Mostrar guiones
+                    if (word[i] === '-') {
+                        blanks += ' - ';
+                    } 
+                    // Mostrar una de cada dos letras
+                    else if (i % 2 === 0) {
+                        blanks += ` ${word[i]} `;
+                    } else {
+                        blanks += ' _ ';
+                    }
+                }
+                blanks += ' ' + word[word.length - 1]; // Última letra
+                return blanks;
+            }
+
+            // Actualizar puntaje
+            function updateScore(points) {
+                score += points;
+                if (score < 0) score = 0; // No permitir puntaje negativo
+                scoreDisplay.innerHTML = `Puntaje: ${score} 🌟`;
+            }
+
+            // --- 7. Lógica de Revisión y Feedback ---
+
+            // Revisar la respuesta
+            function checkAnswer(userInput, wordData) {
+                let isCorrect = false;
+
+                // Comprobamos la palabra, el emoji o las alternativas
+                if (userInput === wordData.word || 
+                    userInput === wordData.emoji || 
+                    wordData.alt.includes(userInput)) {
+                    isCorrect = true;
+                }
+
+                if (isCorrect) {
+                    updateScore(POINTS_CORRECT);
+                    showFeedback('correct');
+                } else {
+                    updateScore(POINTS_INCORRECT);
+                    showFeedback('incorrect', wordData.word);
+                }
+
+                currentGameIndex++;
+                // Pequeña pausa antes de mostrar el siguiente juego
+                setTimeout(() => {
+                    feedbackModal.classList.add('hidden');
+                    showNextGame();
+                }, 1500); 
+            }
+
+            // Mostrar modal de feedback (correcto/incorrecto)
+            function showFeedback(type, correctAnswer = null) {
+                feedbackBox.classList.remove('tada-anim', 'shake-anim');
+
+                if (type === 'correct') {
+                    feedbackEmoji.textContent = '✅';
+                    feedbackText.textContent = '¡Correcto!';
+                    feedbackText.className = 'text-3xl font-bold text-green-600';
+                    feedbackBox.classList.add('tada-anim');
+                } else {
+                    feedbackEmoji.textContent = '❌';
+                    feedbackText.innerHTML = `¡Ups! <br> <span class="text-2xl text-gray-700">La respuesta era: ${correctAnswer}</span>`;
+                    feedbackText.className = 'text-3xl font-bold text-red-600';
+                    feedbackBox.classList.add('shake-anim');
+                }
+                
+                feedbackModal.classList.remove('hidden');
+            }
+
+            // Mostrar pantalla final
+            function showFinalScore() {
+                gameScreen.classList.add('hidden');
+                finalScoreText.textContent = `Tu puntaje final es: ${score} 🌟`;
+                
+                if (score > 150) {
+                    endEmoji.textContent = '🥳';
+                } else if (score > 100) {
+                    endEmoji.textContent = '😄';
+                } else {
+                    endEmoji.textContent = '👍';
+                }
+
+                endScreen.classList.remove('hidden');
+            }
+
+            // --- 8. Asignar Eventos ---
+            
+            startButton.addEventListener('click', () => {
+                // "Calentamiento" del motor de voz.
+                // Es necesario en algunos navegadores móviles (como Safari) 
+                // para que el audio funcione después de una interacción del usuario.
+                speak(' '); // Pronuncia un espacio vacío para activarlo
+                initGame();
+            });
+            restartButton.addEventListener('click', initGame);
+
+        });
+    </script>
+</body>
+</html>
