@@ -588,6 +588,25 @@
             nivelActual = null;
         }
 
+        // --- VERIFICADORES ---
+        function verificarEscritura(palabraCorrecta) {
+            const input = document.getElementById('inputRespuesta').value.toLowerCase().trim();
+            const correcta = palabraCorrecta.toLowerCase().trim();
+            if (input === correcta) {
+                mostrarFeedback(true);
+            } else {
+                mostrarFeedback(false, i18n[currentLang].incorrectSpelling);
+            }
+        }
+
+        function verificarQuiz(seleccion, correcta) {
+            if (seleccion === correcta) {
+                mostrarFeedback(true);
+            } else {
+                mostrarFeedback(false, i18n[currentLang].incorrectQuiz);
+            }
+        }
+
         // --- CONFETI (Efecto visual) ---
         let W = window.innerWidth;
         let H = window.innerHeight;
