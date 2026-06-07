@@ -22,6 +22,17 @@
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        /* Previene que se seleccione texto o se abra lupa al mantener presionado en iPad */
+        .no-select {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            touch-action: none;
+        }
 
         .scroll-touch {
             -webkit-overflow-scrolling: touch;
@@ -100,7 +111,7 @@
         </div>
     </nav>
 
-    <!-- Contenedor Principal (con padding top para que la barra fija no lo tape) -->
+    <!-- Contenedor Principal -->
     <div class="pt-28 md:pt-24 px-4 md:px-8 pb-10">
         <!-- Encabezado -->
         <header class="text-center mb-8 md:mb-10">
@@ -170,17 +181,16 @@
                 listenBtn: "¡Escuchar Palabra! 🔊",
                 placeholder: "Escribe aquí en inglés...",
                 checkBtn: "Revisar ✔️",
-                speakBtn: "Presiona y Habla 🎤",
+                speakBtn: "Mantén presionado para hablar 🎤", // Texto modificado
                 speakHelp: "¿Necesitas ayuda con la pronunciación? Escúchalo aquí",
                 correctMsg: "¡Correcto Isabella! 🎉 ¡Ganaste 10 puntos!",
                 incorrectSpelling: "La ortografía no es correcta",
                 incorrectQuiz: "Esa no es la respuesta correcta",
                 losePoints: "Ups... Inténtalo de nuevo. Pierdes 5 puntos 🥺",
-                listening: "¡Escuchando... Habla ahora! 👂",
+                listening: "¡Escuchando...! Suelta al terminar 👂", // Texto modificado
                 noAudio: "Tu navegador no soporta el audio 😢",
                 heardButExpected: (heard, expected) => `Escuché "${heard}", pero era "${expected}"`,
                 didNotHear: "No pude escucharte bien.",
-                // Textos para el Fallback del Micrófono (Tablets/iPad)
                 micFallbackText: "Parece que el micrófono no está disponible en tu tablet. ¡Practica en voz alta! ¿Lo dijiste bien?",
                 micFallbackYes: "¡Sí, lo dije bien! 😎",
                 micFallbackNo: "Aún no 😅"
@@ -197,17 +207,16 @@
                 listenBtn: "Listen to Word! 🔊",
                 placeholder: "Type here in English...",
                 checkBtn: "Check ✔️",
-                speakBtn: "Press and Speak 🎤",
+                speakBtn: "Press and hold to speak 🎤", // Texto modificado
                 speakHelp: "Need help with pronunciation? Listen here",
                 correctMsg: "Correct Isabella! 🎉 You won 10 points!",
                 incorrectSpelling: "The spelling is not correct",
                 incorrectQuiz: "That is not the correct answer",
                 losePoints: "Oops... Try again. You lose 5 points 🥺",
-                listening: "Listening... Speak now! 👂",
+                listening: "Listening...! Release when done 👂", // Texto modificado
                 noAudio: "Your browser does not support audio 😢",
                 heardButExpected: (heard, expected) => `I heard "${heard}", but it was "${expected}"`,
                 didNotHear: "I couldn't hear you well.",
-                // Texts for Microphone Fallback (Tablets/iPad)
                 micFallbackText: "It seems the microphone is not available on your tablet. Practice out loud! Did you say it right?",
                 micFallbackYes: "Yes, I did! 😎",
                 micFallbackNo: "Not yet 😅"
@@ -219,7 +228,7 @@
             { id: 1, type: 'listen_write', word: 'Mammals', emoji: '🐻', 
               instruct: { es: '¡Escucha la palabra y escríbela en inglés!', en: 'Listen to the word and type it in English!' } },
             { id: 2, type: 'speak', word: 'Birds', emoji: '🦅', 
-              instruct: { es: '¡Toca el micrófono y pronuncia esta palabra en inglés!', en: 'Tap the microphone and say this word in English!' } },
+              instruct: { es: '¡Mantén el botón apretado y pronuncia en inglés!', en: 'Press and hold the button and say it in English!' } },
             { id: 3, type: 'quiz', emoji: '🫧',
               question: { es: '¿Qué usan los peces para respirar bajo el agua? 🐟', en: 'What do fish use to breathe underwater? 🐟' }, 
               options: { es: ['Pulmones', 'Branquias', 'Piel'], en: ['Lungs', 'Gills', 'Skin'] }, 
@@ -243,7 +252,7 @@
             { id: 10, type: 'listen_write', word: 'Scales', emoji: '🐠', 
               instruct: { es: 'Escucha la palabra (Escamas)', en: 'Listen to the word (Escamas)' } },
             { id: 11, type: 'speak', word: 'Fins', emoji: '🦈', 
-              instruct: { es: '¡Habla al micrófono! (Aletas)', en: 'Speak into the mic! (Aletas)' } },
+              instruct: { es: '¡Mantén apretado y di la palabra! (Aletas)', en: 'Hold and say the word! (Aletas)' } },
             { id: 12, type: 'quiz', emoji: '🐣',
               question: { es: 'Los animales que ponen huevos son... 🥚', en: 'Animals that lay eggs are... 🥚' }, 
               options: { es: ['Ovíparos', 'Vivíparos', 'Mamíferos'], en: ['Oviparous', 'Viviparous', 'Mammals'] }, 
@@ -261,7 +270,10 @@
         let puntaje = 0;
         let nivelActual = null;
         let completados = [];
-        let activeRecognition = null; // <- Esta variable es clave para evitar conflictos de micrófono
+        
+        // Variables para el sistema "Pulsar y Hablar"
+        let holdRecognition = null;
+        let isRecording = false;
 
         // DOM Elements
         const scoreDisplay = document.getElementById('scoreDisplay');
@@ -275,15 +287,9 @@
         function toggleLang() {
             currentLang = currentLang === 'es' ? 'en' : 'es';
             actualizarTextosUI();
-            
-            // Re-renderizar
             renderGrid();
-            if (nivelActual) {
-                abrirJuego(nivelActual);
-            }
-            if (!document.getElementById('vocabModal').classList.contains('hidden')) {
-                abrirVocabulario();
-            }
+            if (nivelActual) abrirJuego(nivelActual);
+            if (!document.getElementById('vocabModal').classList.contains('hidden')) abrirVocabulario();
         }
 
         function actualizarTextosUI() {
@@ -296,7 +302,6 @@
             document.getElementById('vocabTitle').innerText = i18n[currentLang].vocabTitle;
         }
 
-        // --- LÓGICA DE VOCABULARIO ---
         function abrirVocabulario() {
             const modal = document.getElementById('vocabModal');
             const content = document.getElementById('vocabContent');
@@ -401,7 +406,6 @@
                     </div>
                 `
             };
-
             content.innerHTML = vocabData[currentLang];
             modal.classList.remove('hidden');
         }
@@ -410,7 +414,6 @@
             document.getElementById('vocabModal').classList.add('hidden');
         }
 
-        // Inicializar Grid
         function renderGrid() {
             gridNiveles.innerHTML = '';
             niveles.forEach((nivel, index) => {
@@ -425,25 +428,20 @@
                     ${isCompleted ? '<span class="absolute top-2 right-2 text-xl md:text-2xl">✅</span>' : ''}
                 `;
                 btn.onclick = () => abrirJuego(nivel);
-                
-                // Efecto de entrada en cascada
                 btn.style.animationDelay = `${index * 0.05}s`;
                 btn.classList.add('bounce-in');
-
                 gridNiveles.appendChild(btn);
             });
         }
 
-        // Lógica de puntuación
         function actualizarPuntaje(cambio) {
             puntaje += cambio;
-            if (puntaje < 0) puntaje = 0; // No dejar en negativo para no desmotivar
+            if (puntaje < 0) puntaje = 0; 
             scoreDisplay.innerText = puntaje;
             
-            // Animación de la puntuación
             const scoreCont = scoreDisplay.parentElement.parentElement;
             scoreCont.classList.remove('bounce-in');
-            void scoreCont.offsetWidth; // trigger reflow
+            void scoreCont.offsetWidth; 
             scoreCont.classList.add('bounce-in');
 
             if(cambio > 0) {
@@ -472,7 +470,6 @@
                     cerrarJuego();
                     renderGrid();
                 }, 2500);
-
             } else {
                 feedbackBox.classList.add('bg-red-100', 'text-red-700');
                 feedbackBox.innerHTML = mensajeError ? `${mensajeError}. ${i18n[currentLang].losePoints}` : i18n[currentLang].losePoints;
@@ -484,11 +481,10 @@
             }
         }
 
-        // --- SISTEMA DE AUDIO (Texto a Voz) ---
         function pronunciarPalabra(palabra) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(palabra);
-                utterance.lang = 'en-US'; // Vocabulario siempre en inglés
+                utterance.lang = 'en-US'; 
                 utterance.rate = 0.8; 
                 utterance.pitch = 1.2; 
                 window.speechSynthesis.speak(utterance);
@@ -497,62 +493,41 @@
             }
         }
 
-        // --- SISTEMA DE RECONOCIMIENTO DE VOZ MEJORADO ---
-        function iniciarReconocimiento(palabraObjetivo) {
-            const btnHablar = document.getElementById('btnHablar');
+        // --- NUEVO SISTEMA: MANTENER PRESIONADO PARA HABLAR (PUSH-TO-TALK) ---
+        function startHoldToSpeak(event, palabraObjetivo) {
+            // Prevenir scroll, click secundario o selección al mantener presionado en touch
+            if(event.type === 'touchstart') event.preventDefault(); 
             
-            // PREVENCIÓN DE DOBLE CLIC: Si el botón ya está deshabilitado, no hacer nada.
-            if (!btnHablar || btnHablar.disabled) return; 
+            if (isRecording) return; // Si ya está escuchando, no hacer nada
+
+            const btnHablar = document.getElementById('btnHablar');
+            if (!btnHablar) return;
 
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            
             if (!SpeechRecognition) {
                 mostrarFallbackMic();
                 return;
             }
 
-            // 1. Bloquear el botón visual y funcionalmente de inmediato
-            btnHablar.disabled = true;
+            isRecording = true;
+            feedbackBox.classList.add('hidden'); // Ocultar mensajes de error anteriores
+            
+            // Efecto visual de apretado
             btnHablar.innerHTML = i18n[currentLang].listening;
             btnHablar.classList.replace('bg-blue-500', 'bg-red-500');
             btnHablar.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
-            btnHablar.classList.add('animate-pulse', 'opacity-80', 'cursor-not-allowed');
+            btnHablar.classList.add('scale-95', 'animate-pulse');
 
-            // 2. Si había una sesión de microfono previa trabada, la cancelamos primero
-            if (activeRecognition) {
-                try { activeRecognition.abort(); } catch(e) {}
-            }
+            // Iniciar reconocimiento
+            holdRecognition = new SpeechRecognition();
+            holdRecognition.lang = 'en-US';
+            holdRecognition.interimResults = false;
+            holdRecognition.maxAlternatives = 1;
 
-            activeRecognition = new SpeechRecognition();
-            activeRecognition.lang = 'en-US';
-            activeRecognition.interimResults = false;
-            activeRecognition.maxAlternatives = 1;
-
-            // Función interna para devolver el botón a su estado normal
-            const resetearBotonMic = () => {
-                if (btnHablar) {
-                    btnHablar.disabled = false;
-                    btnHablar.innerHTML = i18n[currentLang].speakBtn;
-                    btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
-                    btnHablar.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
-                    btnHablar.classList.remove('animate-pulse', 'opacity-80', 'cursor-not-allowed');
-                }
-                activeRecognition = null; // Limpiar la sesión actual
-            };
-
-            try {
-                activeRecognition.start();
-            } catch (e) {
-                resetearBotonMic();
-                mostrarFallbackMic();
-                return;
-            }
-
-            activeRecognition.onresult = (event) => {
-                const resultado = event.results[0][0].transcript.toLowerCase().trim();
+            holdRecognition.onresult = (e) => {
+                const resultado = e.results[0][0].transcript.toLowerCase().trim();
                 const objetivo = palabraObjetivo.toLowerCase().trim();
                 
-                // Quitamos puntuación para comparar
                 const resLimpio = resultado.replace(/[^\w\s]|_/g, "");
                 const objLimpio = objetivo.replace(/[^\w\s]|_/g, "");
 
@@ -563,27 +538,57 @@
                 }
             };
 
-            activeRecognition.onerror = (event) => {
-                if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    // Permiso denegado
+            holdRecognition.onerror = (e) => {
+                if(e.error === 'not-allowed' || e.error === 'service-not-allowed') {
                     mostrarFallbackMic();
-                } else if (event.error !== 'aborted') {
-                    // Si no fue cancelado a propósito, mostrar que no se escuchó bien
+                } else if (e.error !== 'aborted') {
                     mostrarFeedback(false, i18n[currentLang].didNotHear);
                 }
             };
 
-            // onend SIEMPRE se dispara cuando el micrófono se apaga (ya sea por error, resultado o inactividad)
-            activeRecognition.onend = () => {
+            holdRecognition.onend = () => {
                 resetearBotonMic();
+            };
+
+            try {
+                holdRecognition.start();
+            } catch (e) {
+                resetearBotonMic();
+                mostrarFallbackMic();
             }
         }
 
-        // Función para mostrar alternativa si el micrófono falla (Especial iPad)
+        function stopHoldToSpeak(event) {
+            if (event && event.type === 'touchend') event.preventDefault();
+
+            if (!isRecording) return;
+            
+            // Al soltar el dedo, forzamos detener la escucha, lo que procesa el resultado inmediatamente
+            if (holdRecognition) {
+                try { holdRecognition.stop(); } catch(e) {}
+            }
+            
+            // Reinicio visual instantáneo para mayor fluidez
+            resetearBotonMic();
+        }
+
+        function resetearBotonMic() {
+            isRecording = false;
+            const btnHablar = document.getElementById('btnHablar');
+            if (btnHablar) {
+                btnHablar.innerHTML = i18n[currentLang].speakBtn;
+                btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
+                btnHablar.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
+                btnHablar.classList.remove('scale-95', 'animate-pulse');
+            }
+            holdRecognition = null;
+        }
+
         function mostrarFallbackMic() {
             const container = document.getElementById('speakGameContainer');
-            if (container) {
+            if (container && !document.getElementById('fallbackContainer')) {
                 const innerCont = document.createElement('div');
+                innerCont.id = 'fallbackContainer';
                 innerCont.className = "bg-orange-100 border-4 border-orange-300 p-4 md:p-6 rounded-3xl mt-6 bounce-in";
                 innerCont.innerHTML = `
                     <p class="text-orange-800 font-bold mb-4 text-base md:text-xl">${i18n[currentLang].micFallbackText}</p>
@@ -596,14 +601,12 @@
                         </button>
                     </div>
                 `;
-                
                 const btnHablar = document.getElementById('btnHablar');
-                if(btnHablar) btnHablar.style.display = 'none'; // Ocultar el botón que no funciona
+                if(btnHablar) btnHablar.style.display = 'none'; 
                 container.appendChild(innerCont);
             }
         }
 
-        // --- GESTIÓN DEL MODAL Y TIPOS DE JUEGO ---
         function abrirJuego(nivel) {
             nivelActual = nivel;
             modalTitle.innerText = `${i18n[currentLang].gameWord} ${niveles.findIndex(n => n.id === nivel.id) + 1} ${nivel.emoji}`;
@@ -612,7 +615,6 @@
             let instruccion = nivel.instruct ? nivel.instruct[currentLang] : '';
             let html = instruccion ? `<p class="text-lg md:text-2xl text-indigo-800 font-bold mb-6">${instruccion}</p>` : '';
 
-            // JUEGO: ESCUCHAR Y ESCRIBIR
             if (nivel.type === 'listen_write') {
                 html += `
                     <button onclick="pronunciarPalabra('${nivel.word}')" 
@@ -628,16 +630,21 @@
                         </button>
                     </div>
                 `;
-            } 
-            // JUEGO: LEER Y HABLAR
-            else if (nivel.type === 'speak') {
+            } else if (nivel.type === 'speak') {
+                // Nuevo botón diseñado específicamente para eventos táctiles (Push-to-Talk)
                 html += `
                     <div id="speakGameContainer" class="w-full max-w-md mx-auto">
                         <div class="text-4xl md:text-6xl font-black text-indigo-600 mb-8 bg-white py-6 rounded-3xl border-4 border-indigo-100 shadow-inner break-words">
                             ${nivel.word}
                         </div>
-                        <button id="btnHablar" onclick="iniciarReconocimiento('${nivel.word}')" 
-                                class="touch-manipulation bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition">
+                        <button id="btnHablar" 
+                                onmousedown="startHoldToSpeak(event, '${nivel.word}')"
+                                onmouseup="stopHoldToSpeak(event)"
+                                onmouseleave="stopHoldToSpeak(event)"
+                                ontouchstart="startHoldToSpeak(event, '${nivel.word}')"
+                                ontouchend="stopHoldToSpeak(event)"
+                                ontouchcancel="stopHoldToSpeak(event)"
+                                class="no-select bg-blue-500 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition duration-150 ease-in-out cursor-pointer">
                             ${i18n[currentLang].speakBtn}
                         </button>
                         <button onclick="pronunciarPalabra('${nivel.word}')" class="touch-manipulation mt-6 text-indigo-500 font-bold underline text-base md:text-lg block w-full">
@@ -645,13 +652,10 @@
                         </button>
                     </div>
                 `;
-            }
-            // JUEGO: PREGUNTAS (QUIZ)
-            else if (nivel.type === 'quiz') {
+            } else if (nivel.type === 'quiz') {
                 html += `<div class="text-lg md:text-2xl font-bold text-gray-800 mb-6 bg-white p-4 md:p-6 rounded-2xl shadow">${nivel.question[currentLang]}</div>`;
                 html += `<div class="flex flex-col gap-3 w-full max-w-md mx-auto">`;
                 
-                // Mezclar opciones
                 let opciones = [...nivel.options[currentLang]].sort(() => Math.random() - 0.5);
                 
                 opciones.forEach(opcion => {
@@ -673,14 +677,12 @@
             gameModal.classList.add('hidden');
             nivelActual = null;
             
-            // Si cerramos el juego a la mitad, forzamos el apagado del micrófono
-            if (activeRecognition) {
-                try { activeRecognition.abort(); } catch(e) {}
-                activeRecognition = null;
+            if (holdRecognition) {
+                try { holdRecognition.abort(); } catch(e) {}
+                resetearBotonMic();
             }
         }
 
-        // --- VERIFICADORES ---
         function verificarEscritura(palabraCorrecta) {
             const input = document.getElementById('inputRespuesta').value.toLowerCase().trim();
             const correcta = palabraCorrecta.toLowerCase().trim();
@@ -706,7 +708,6 @@
         const context = canvas.getContext("2d");
         const maxConfettis = 100;
         const particles = [];
-
         const possibleColors = ["#FF5733", "#33FF57", "#3357FF", "#F333FF", "#33FFF3", "#FFD700"];
 
         function randomFromTo(from, to) {
@@ -714,9 +715,9 @@
         }
 
         function confettiParticle() {
-            this.x = Math.random() * W; // x
-            this.y = Math.random() * H - H; // y
-            this.r = randomFromTo(11, 33); // radius
+            this.x = Math.random() * W; 
+            this.y = Math.random() * H - H; 
+            this.r = randomFromTo(11, 33); 
             this.d = Math.random() * maxConfettis + 11;
             this.color = possibleColors[Math.floor(Math.random() * possibleColors.length)];
             this.tilt = Math.floor(Math.random() * 33) - 11;
@@ -747,14 +748,12 @@
             let remainingFlakes = 0;
             for (var i = 0; i < maxConfettis; i++) {
                 particle = particles[i];
-
                 particle.tiltAngle += particle.tiltAngleIncremental;
                 particle.y += (Math.cos(particle.d) + 3 + particle.r / 2) / 2;
                 particle.tilt = Math.sin(particle.tiltAngle - i / 3) * 15;
 
                 if (particle.y <= H) remainingFlakes++;
 
-                // Si cae al fondo, no reiniciar a menos que sigamos lanzando
                 if (particle.x > W + 30 || particle.x < -30 || particle.y > H) {
                     particle.x = Math.random() * W;
                     particle.y = -30;
@@ -774,7 +773,6 @@
                 animationId = requestAnimationFrame(Draw);
             }
             
-            // Detener confeti después de 2.5 segundos
             setTimeout(() => {
                 particles.length = 0;
             }, 2500);
