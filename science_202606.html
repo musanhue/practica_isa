@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌟 Ciencias con Isabella 🌟</title>
     <!-- Tailwind CSS para estilos rápidos y modernos -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -13,6 +13,18 @@
             font-family: 'Nunito', sans-serif;
             background: linear-gradient(135deg, #fbc2eb 0%, #a6c1ee 100%);
             min-height: 100vh;
+            /* Previene el scroll horizontal no deseado en móviles */
+            overflow-x: hidden; 
+        }
+
+        /* Optimizaciones Touch para iPad/Tablets */
+        .touch-manipulation {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .scroll-touch {
+            -webkit-overflow-scrolling: touch;
         }
 
         .bounce-in {
@@ -60,62 +72,68 @@
         }
     </style>
 </head>
-<body class="p-4 md:p-8 relative">
+<body class="relative">
 
     <canvas id="confetti"></canvas>
 
-    <!-- Botones Superiores -->
-    <div class="fixed top-4 left-4 z-50 flex flex-col gap-2 md:flex-row">
-        <!-- Botón de cambio de idioma -->
-        <button id="langBtn" onclick="toggleLang()" class="bg-white border-4 border-indigo-400 hover:bg-indigo-50 rounded-full px-4 py-2 md:px-6 md:py-3 shadow-xl font-bold text-indigo-700 transition-all bounce-in flex items-center gap-2">
-            🇪🇸 Español
-        </button>
-        
-        <!-- Botón de Vocabulario -->
-        <button id="vocabBtn" onclick="abrirVocabulario()" class="bg-white border-4 border-pink-400 hover:bg-pink-50 rounded-full px-4 py-2 md:px-6 md:py-3 shadow-xl font-bold text-pink-700 transition-all bounce-in flex items-center gap-2">
-            📚 Vocabulary
-        </button>
-    </div>
-
-    <!-- Puntuación fija arriba a la derecha -->
-    <div class="fixed top-4 right-4 bg-white border-4 border-yellow-400 rounded-full px-4 py-2 md:px-6 md:py-3 shadow-xl z-50 flex items-center gap-2 bounce-in">
-        <span class="text-3xl">⭐</span>
-        <div class="text-xl md:text-2xl font-black text-indigo-700">
-            <span id="scoreLabel">Puntos:</span> <span id="scoreDisplay">0</span>
+    <!-- Barra Superior Responsiva -->
+    <nav class="fixed top-0 w-full p-4 flex justify-between items-start z-50 pointer-events-none">
+        <!-- Botones Izquierda -->
+        <div class="flex flex-col gap-2 md:flex-row pointer-events-auto">
+            <!-- Botón de cambio de idioma -->
+            <button id="langBtn" onclick="toggleLang()" class="touch-manipulation bg-white border-4 border-indigo-400 hover:bg-indigo-50 rounded-full px-4 py-2 md:px-6 md:py-3 shadow-xl font-bold text-indigo-700 transition-all bounce-in flex items-center justify-center gap-2 text-sm md:text-base">
+                🇪🇸 Español
+            </button>
+            
+            <!-- Botón de Vocabulario -->
+            <button id="vocabBtn" onclick="abrirVocabulario()" class="touch-manipulation bg-white border-4 border-pink-400 hover:bg-pink-50 rounded-full px-4 py-2 md:px-6 md:py-3 shadow-xl font-bold text-pink-700 transition-all bounce-in flex items-center justify-center gap-2 text-sm md:text-base">
+                📚 Vocabulary
+            </button>
         </div>
-    </div>
 
-    <!-- Encabezado -->
-    <header class="text-center mb-10 mt-16 md:mt-8">
-        <h1 id="mainTitle" class="text-5xl md:text-6xl font-black text-white drop-shadow-md mb-4">
-            ¡Hola Isabella! 👧🏻✨
-        </h1>
-        <p id="subTitle" class="text-lg md:text-2xl text-indigo-800 font-bold bg-white/50 inline-block px-6 py-2 rounded-full shadow-sm">
-            ¡Practiquemos el vocabulario de la Unidad 2 de Natural Science! 🦁🦅🐸
-        </p>
-    </header>
-
-    <!-- Contenedor de Niveles -->
-    <main class="max-w-6xl mx-auto">
-        <div id="gridNiveles" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
-            <!-- Los botones se generan con JS -->
+        <!-- Puntuación Derecha -->
+        <div class="pointer-events-auto bg-white border-4 border-yellow-400 rounded-full px-3 py-2 md:px-6 md:py-3 shadow-xl flex items-center gap-1 md:gap-2 bounce-in">
+            <span class="text-2xl md:text-3xl">⭐</span>
+            <div class="text-lg md:text-2xl font-black text-indigo-700 whitespace-nowrap">
+                <span id="scoreLabel" class="hidden sm:inline">Puntos:</span> <span id="scoreDisplay">0</span>
+            </div>
         </div>
-    </main>
+    </nav>
+
+    <!-- Contenedor Principal (con padding top para que la barra fija no lo tape) -->
+    <div class="pt-28 md:pt-24 px-4 md:px-8 pb-10">
+        <!-- Encabezado -->
+        <header class="text-center mb-8 md:mb-10">
+            <h1 id="mainTitle" class="text-4xl md:text-6xl font-black text-white drop-shadow-md mb-4">
+                ¡Hola Isabella! 👧🏻✨
+            </h1>
+            <p id="subTitle" class="text-base md:text-2xl text-indigo-800 font-bold bg-white/50 inline-block px-4 py-2 md:px-6 rounded-full shadow-sm">
+                ¡Practiquemos el vocabulario de la Unidad 2 de Natural Science! 🦁🦅🐸
+            </p>
+        </header>
+
+        <!-- Contenedor de Niveles -->
+        <main class="max-w-6xl mx-auto">
+            <div id="gridNiveles" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-6">
+                <!-- Los botones se generan con JS -->
+            </div>
+        </main>
+    </div>
 
     <!-- Modal del Juego -->
-    <div id="gameModal" class="hidden fixed inset-0 bg-black/60 modal-overlay z-40 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl transform transition-all">
+    <div id="gameModal" class="hidden fixed inset-0 bg-black/60 modal-overlay z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl w-full max-w-2xl max-h-[95vh] flex flex-col overflow-hidden shadow-2xl transform transition-all">
             
-            <div class="bg-indigo-500 p-4 flex justify-between items-center text-white">
-                <h2 id="modalTitle" class="text-2xl font-bold">Nivel</h2>
-                <button onclick="cerrarJuego()" class="text-white hover:text-pink-200 text-3xl font-bold leading-none">&times;</button>
+            <div class="bg-indigo-500 p-4 flex justify-between items-center text-white shrink-0">
+                <h2 id="modalTitle" class="text-xl md:text-2xl font-bold">Nivel</h2>
+                <button onclick="cerrarJuego()" class="touch-manipulation text-white hover:text-pink-200 text-4xl font-bold leading-none w-10 h-10 flex items-center justify-center">&times;</button>
             </div>
 
-            <div id="modalContent" class="p-8 text-center bg-indigo-50">
+            <div id="modalContent" class="p-6 md:p-8 text-center bg-indigo-50 overflow-y-auto scroll-touch">
                 <!-- Contenido dinámico del juego -->
             </div>
 
-            <div id="feedbackBox" class="hidden p-4 text-center font-bold text-xl">
+            <div id="feedbackBox" class="hidden p-4 text-center font-bold text-lg md:text-xl shrink-0 border-t-2 border-indigo-100">
                 <!-- Mensajes de Correcto/Incorrecto -->
             </div>
         </div>
@@ -125,10 +143,10 @@
     <div id="vocabModal" class="hidden fixed inset-0 bg-black/60 modal-overlay z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl transform transition-all">
             <div class="bg-pink-500 p-4 flex justify-between items-center text-white shrink-0">
-                <h2 id="vocabTitle" class="text-2xl font-bold">📚 Vocabulary Summary / Resumen</h2>
-                <button onclick="cerrarVocabulario()" class="text-white hover:text-pink-200 text-3xl font-bold leading-none">&times;</button>
+                <h2 id="vocabTitle" class="text-xl md:text-2xl font-bold">📚 Vocabulary Summary / Resumen</h2>
+                <button onclick="cerrarVocabulario()" class="touch-manipulation text-white hover:text-pink-200 text-4xl font-bold leading-none w-10 h-10 flex items-center justify-center">&times;</button>
             </div>
-            <div id="vocabContent" class="p-6 md:p-8 overflow-y-auto bg-pink-50 space-y-6">
+            <div id="vocabContent" class="p-6 md:p-8 overflow-y-auto scroll-touch bg-pink-50 space-y-6">
                 <!-- Contenido dinámico del vocabulario -->
             </div>
         </div>
@@ -160,9 +178,12 @@
                 losePoints: "Ups... Inténtalo de nuevo. Pierdes 5 puntos 🥺",
                 listening: "¡Escuchando... Habla ahora! 👂",
                 noAudio: "Tu navegador no soporta el audio 😢",
-                noMic: "Para usar el micrófono, usa Google Chrome en tu computador o celular 🎤",
                 heardButExpected: (heard, expected) => `Escuché "${heard}", pero era "${expected}"`,
-                didNotHear: "No pude escucharte bien."
+                didNotHear: "No pude escucharte bien.",
+                // Textos para el Fallback del Micrófono (Tablets/iPad)
+                micFallbackText: "Parece que el micrófono no está disponible en tu tablet. ¡Practica en voz alta! ¿Lo dijiste bien?",
+                micFallbackYes: "¡Sí, lo dije bien! 😎",
+                micFallbackNo: "Aún no 😅"
             },
             en: {
                 title: "🌟 Science with Isabella 🌟",
@@ -184,9 +205,12 @@
                 losePoints: "Oops... Try again. You lose 5 points 🥺",
                 listening: "Listening... Speak now! 👂",
                 noAudio: "Your browser does not support audio 😢",
-                noMic: "To use the microphone, use Google Chrome on your computer or phone 🎤",
                 heardButExpected: (heard, expected) => `I heard "${heard}", but it was "${expected}"`,
-                didNotHear: "I couldn't hear you well."
+                didNotHear: "I couldn't hear you well.",
+                // Texts for Microphone Fallback (Tablets/iPad)
+                micFallbackText: "It seems the microphone is not available on your tablet. Practice out loud! Did you say it right?",
+                micFallbackYes: "Yes, I did! 😎",
+                micFallbackNo: "Not yet 😅"
             }
         };
 
@@ -278,13 +302,13 @@
             
             const vocabData = {
                 es: `
-                    <div class="space-y-6 text-gray-800 text-lg">
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-indigo-400">
-                            <h3 class="text-2xl font-black text-indigo-600 mb-2">🦴 Vertebrates (Vertebrados)</h3>
+                    <div class="space-y-6 text-gray-800 text-base md:text-lg">
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-indigo-400">
+                            <h3 class="text-xl md:text-2xl font-black text-indigo-600 mb-2">🦴 Vertebrates (Vertebrados)</h3>
                             <p>Tienen <strong>spinal column</strong> (columna vertebral) y <strong>internal skeleton</strong> (esqueleto interno).</p>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-orange-400">
-                            <h3 class="text-2xl font-black text-orange-600 mb-2">🐻 Mammals (Mamíferos)</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-orange-400">
+                            <h3 class="text-xl md:text-2xl font-black text-orange-600 mb-2">🐻 Mammals (Mamíferos)</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Respiran por <strong>lungs</strong> (pulmones). Piel cubierta con <strong>hair</strong> (pelo).</li>
                                 <li>Son <strong>viviparous</strong> (nacen del vientre). Beben <strong>milk</strong> de las <strong>mammary glands</strong>.</li>
@@ -292,32 +316,32 @@
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Ejemplos:</strong> Puma, guanaco, zorro andino, caballo, ballena, delfín, murciélago, perro, gato.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-blue-400">
-                            <h3 class="text-2xl font-black text-blue-600 mb-2">🦅 Birds (Aves)</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-blue-400">
+                            <h3 class="text-xl md:text-2xl font-black text-blue-600 mb-2">🦅 Birds (Aves)</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Piel con <strong>feathers</strong> (plumas). Respiran por <strong>lungs</strong>. Son <strong>oviparous</strong>.</li>
                                 <li>Tienen dos <strong>wings</strong> (alas), dos <strong>legs</strong> (patas) y un <strong>beak</strong> (pico).</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Ejemplos:</strong> Cóndor, flamenco, pelícano, pato, pingüino (no vuela), avestruz (no vuela).</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-green-500">
-                            <h3 class="text-2xl font-black text-green-600 mb-2">🦎 Reptiles (Reptiles)</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-green-500">
+                            <h3 class="text-xl md:text-2xl font-black text-green-600 mb-2">🦎 Reptiles (Reptiles)</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Piel seca con <strong>scales</strong> (escamas). Respiran por <strong>lungs</strong> y son <strong>oviparous</strong>.</li>
                                 <li>Se mueven <strong>slithering</strong> (reptando), caminando o nadando.</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Ejemplos:</strong> Cocodrilo, tortuga, serpiente (culebra de cola corta), lagartija (lagarto joya), camaleón.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-cyan-400">
-                            <h3 class="text-2xl font-black text-cyan-600 mb-2">🐟 Fish (Peces)</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-cyan-400">
+                            <h3 class="text-xl md:text-2xl font-black text-cyan-600 mb-2">🐟 Fish (Peces)</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Cuerpo con <strong>scales</strong> (escamas). Respiran por <strong>gills</strong> (branquias).</li>
                                 <li>Se mueven usando <strong>fins</strong> (aletas). Son <strong>oviparous</strong>.</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Ejemplos:</strong> Congrio, caballito de mar, raya, tiburón, anchoa.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-emerald-400">
-                            <h3 class="text-2xl font-black text-emerald-600 mb-2">🐸 Amphibians (Anfibios)</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-emerald-400">
+                            <h3 class="text-xl md:text-2xl font-black text-emerald-600 mb-2">🐸 Amphibians (Anfibios)</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>De pequeños respiran por <strong>gills</strong>, de adultos por <strong>lungs</strong> y <strong>skin</strong>.</li>
                                 <li>Piel <strong>smooth, moist, and thin</strong> (suave, húmeda y delgada).</li>
@@ -327,13 +351,13 @@
                     </div>
                 `,
                 en: `
-                    <div class="space-y-6 text-gray-800 text-lg">
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-indigo-400">
-                            <h3 class="text-2xl font-black text-indigo-600 mb-2">🦴 Vertebrates</h3>
+                    <div class="space-y-6 text-gray-800 text-base md:text-lg">
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-indigo-400">
+                            <h3 class="text-xl md:text-2xl font-black text-indigo-600 mb-2">🦴 Vertebrates</h3>
                             <p>They have a <strong>spinal column</strong> and an <strong>internal skeleton</strong>.</p>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-orange-400">
-                            <h3 class="text-2xl font-black text-orange-600 mb-2">🐻 Mammals</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-orange-400">
+                            <h3 class="text-xl md:text-2xl font-black text-orange-600 mb-2">🐻 Mammals</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Breathe through <strong>lungs</strong>. Skin has <strong>hair</strong>.</li>
                                 <li>They are <strong>viviparous</strong> (womb). Drink <strong>milk</strong> from <strong>mammary glands</strong>.</li>
@@ -341,32 +365,32 @@
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Examples:</strong> Puma, guanaco, Andean fox, horse, whale, dolphin, bat, dog, cat.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-blue-400">
-                            <h3 class="text-2xl font-black text-blue-600 mb-2">🦅 Birds</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-blue-400">
+                            <h3 class="text-xl md:text-2xl font-black text-blue-600 mb-2">🦅 Birds</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Skin covered with <strong>feathers</strong>. Breathe through <strong>lungs</strong>. <strong>Oviparous</strong>.</li>
                                 <li>Have two <strong>wings</strong>, two <strong>legs</strong>, and a <strong>beak</strong>.</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Examples:</strong> Condor, flamingo, pelican, duck, penguin (cannot fly), ostrich (cannot fly).</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-green-500">
-                            <h3 class="text-2xl font-black text-green-600 mb-2">🦎 Reptiles</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-green-500">
+                            <h3 class="text-xl md:text-2xl font-black text-green-600 mb-2">🦎 Reptiles</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Dry skin with <strong>scales</strong>. Breathe through <strong>lungs</strong>. <strong>Oviparous</strong>.</li>
                                 <li>Move by <strong>slithering</strong>, crawling, walking, or swimming.</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Examples:</strong> Crocodile, turtle, snake (Chilean slender snake), lizard (Jewel lizard), chameleon.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-cyan-400">
-                            <h3 class="text-2xl font-black text-cyan-600 mb-2">🐟 Fish</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-cyan-400">
+                            <h3 class="text-xl md:text-2xl font-black text-cyan-600 mb-2">🐟 Fish</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>Body with <strong>scales</strong>. Breathe underwater through <strong>gills</strong>.</li>
                                 <li>Move using their <strong>fins</strong>. They are <strong>oviparous</strong>.</li>
                                 <li class="mt-2 text-indigo-700"><strong>🌟 Examples:</strong> Conger eel, seahorse, stingray, shark, anchovy.</li>
                             </ul>
                         </div>
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border-l-8 border-emerald-400">
-                            <h3 class="text-2xl font-black text-emerald-600 mb-2">🐸 Amphibians</h3>
+                        <div class="bg-white p-4 md:p-5 rounded-2xl shadow-sm border-l-8 border-emerald-400">
+                            <h3 class="text-xl md:text-2xl font-black text-emerald-600 mb-2">🐸 Amphibians</h3>
                             <ul class="list-disc pl-6 space-y-1">
                                 <li>When young, breathe through <strong>gills</strong>; when adults, through <strong>lungs</strong> and <strong>skin</strong>.</li>
                                 <li>Their skin is <strong>smooth, moist, and thin</strong>.</li>
@@ -391,13 +415,13 @@
             niveles.forEach((nivel, index) => {
                 const isCompleted = completados.includes(nivel.id);
                 const btn = document.createElement('button');
-                btn.className = `btn-game h-32 md:h-40 rounded-3xl font-bold text-xl md:text-2xl flex flex-col items-center justify-center p-2 border-4 
+                btn.className = `touch-manipulation btn-game h-28 md:h-40 rounded-3xl font-bold text-lg md:text-2xl flex flex-col items-center justify-center p-2 border-4 
                     ${isCompleted ? 'bg-green-100 border-green-400 text-green-700' : 'bg-white border-indigo-200 text-indigo-600 hover:bg-indigo-50'} shadow-lg`;
                 
                 btn.innerHTML = `
-                    <span class="text-4xl md:text-5xl mb-2">${nivel.emoji}</span>
-                    <span class="text-center text-lg md:text-2xl">${i18n[currentLang].gameWord} ${index + 1}</span>
-                    ${isCompleted ? '<span class="absolute top-2 right-2 text-2xl">✅</span>' : ''}
+                    <span class="text-4xl md:text-5xl mb-1 md:mb-2">${nivel.emoji}</span>
+                    <span class="text-center">${i18n[currentLang].gameWord} ${index + 1}</span>
+                    ${isCompleted ? '<span class="absolute top-2 right-2 text-xl md:text-2xl">✅</span>' : ''}
                 `;
                 btn.onclick = () => abrirJuego(nivel);
                 
@@ -476,12 +500,14 @@
         function iniciarReconocimiento(palabraObjetivo) {
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
+            // Fallback para dispositivos no soportados (como Safari en iPad)
             if (!SpeechRecognition) {
-                alert(i18n[currentLang].noMic);
+                mostrarFallbackMic();
                 return;
             }
 
             const btnHablar = document.getElementById('btnHablar');
+            const textoOriginalBtn = btnHablar.innerHTML;
             btnHablar.innerHTML = i18n[currentLang].listening;
             btnHablar.classList.replace('bg-blue-500', 'bg-red-500');
             btnHablar.classList.add('animate-pulse');
@@ -491,7 +517,12 @@
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
-            recognition.start();
+            try {
+                recognition.start();
+            } catch (e) {
+                mostrarFallbackMic();
+                return;
+            }
 
             recognition.onresult = (event) => {
                 const resultado = event.results[0][0].transcript.toLowerCase().trim();
@@ -509,13 +540,44 @@
             };
 
             recognition.onerror = (event) => {
-                mostrarFeedback(false, i18n[currentLang].didNotHear);
+                if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+                    // Si el usuario denegó el permiso o el navegador lo bloquea, usar fallback
+                    mostrarFallbackMic();
+                } else {
+                    mostrarFeedback(false, i18n[currentLang].didNotHear);
+                }
             };
 
             recognition.onend = () => {
-                btnHablar.innerHTML = i18n[currentLang].speakBtn;
-                btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
-                btnHablar.classList.remove('animate-pulse');
+                if(document.getElementById('btnHablar')) { // Asegurarse de que el botón siga ahí y no haya sido reemplazado por el fallback
+                    btnHablar.innerHTML = i18n[currentLang].speakBtn;
+                    btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
+                    btnHablar.classList.remove('animate-pulse');
+                }
+            }
+        }
+
+        // Función para mostrar alternativa si el micrófono falla (Especial iPad)
+        function mostrarFallbackMic() {
+            const container = document.getElementById('speakGameContainer');
+            if (container) {
+                const innerCont = document.createElement('div');
+                innerCont.className = "bg-orange-100 border-4 border-orange-300 p-4 md:p-6 rounded-3xl mt-6 bounce-in";
+                innerCont.innerHTML = `
+                    <p class="text-orange-800 font-bold mb-4 text-base md:text-xl">${i18n[currentLang].micFallbackText}</p>
+                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                        <button onclick="mostrarFeedback(true)" class="touch-manipulation bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-full shadow-lg text-lg md:text-xl w-full sm:w-auto">
+                            ${i18n[currentLang].micFallbackYes}
+                        </button>
+                        <button onclick="mostrarFeedback(false, '')" class="touch-manipulation bg-red-400 hover:bg-red-500 text-white font-bold py-3 px-6 rounded-full shadow-lg text-lg md:text-xl w-full sm:w-auto">
+                            ${i18n[currentLang].micFallbackNo}
+                        </button>
+                    </div>
+                `;
+                
+                const btnHablar = document.getElementById('btnHablar');
+                if(btnHablar) btnHablar.style.display = 'none'; // Ocultar el botón que no funciona
+                container.appendChild(innerCont);
             }
         }
 
@@ -526,20 +588,20 @@
             feedbackBox.classList.add('hidden');
             
             let instruccion = nivel.instruct ? nivel.instruct[currentLang] : '';
-            let html = instruccion ? `<p class="text-xl md:text-2xl text-indigo-800 font-bold mb-6">${instruccion}</p>` : '';
+            let html = instruccion ? `<p class="text-lg md:text-2xl text-indigo-800 font-bold mb-6">${instruccion}</p>` : '';
 
             // JUEGO: ESCUCHAR Y ESCRIBIR
             if (nivel.type === 'listen_write') {
                 html += `
                     <button onclick="pronunciarPalabra('${nivel.word}')" 
-                            class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl mb-8 transform transition hover:scale-110">
+                            class="touch-manipulation bg-pink-500 hover:bg-pink-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full md:w-auto mb-6 transform transition hover:scale-105">
                         ${i18n[currentLang].listenBtn}
                     </button>
-                    <div class="mt-4">
+                    <div class="mt-2 w-full max-w-md mx-auto">
                         <input type="text" id="inputRespuesta" placeholder="${i18n[currentLang].placeholder}" 
-                            class="w-full text-center border-4 border-pink-200 rounded-2xl py-3 px-4 text-xl md:text-2xl focus:outline-none focus:border-pink-500" autocomplete="off">
+                            class="w-full text-center border-4 border-pink-200 rounded-2xl py-4 px-4 text-xl md:text-2xl focus:outline-none focus:border-pink-500 mb-4" autocomplete="off">
                         <button onclick="verificarEscritura('${nivel.word}')" 
-                                class="mt-6 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-10 rounded-full shadow-lg text-xl w-full md:w-auto">
+                                class="touch-manipulation bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-10 rounded-full shadow-lg text-xl w-full">
                             ${i18n[currentLang].checkBtn}
                         </button>
                     </div>
@@ -548,22 +610,24 @@
             // JUEGO: LEER Y HABLAR
             else if (nivel.type === 'speak') {
                 html += `
-                    <div class="text-4xl md:text-6xl font-black text-indigo-600 my-8 bg-white py-6 rounded-3xl border-4 border-indigo-100 shadow-inner break-words">
-                        ${nivel.word}
+                    <div id="speakGameContainer" class="w-full max-w-md mx-auto">
+                        <div class="text-4xl md:text-6xl font-black text-indigo-600 mb-8 bg-white py-6 rounded-3xl border-4 border-indigo-100 shadow-inner break-words">
+                            ${nivel.word}
+                        </div>
+                        <button id="btnHablar" onclick="iniciarReconocimiento('${nivel.word}')" 
+                                class="touch-manipulation bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition hover:scale-105">
+                            ${i18n[currentLang].speakBtn}
+                        </button>
+                        <button onclick="pronunciarPalabra('${nivel.word}')" class="touch-manipulation mt-6 text-indigo-500 font-bold underline text-base md:text-lg block w-full">
+                            ${i18n[currentLang].speakHelp}
+                        </button>
                     </div>
-                    <button id="btnHablar" onclick="iniciarReconocimiento('${nivel.word}')" 
-                            class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition hover:scale-105">
-                        ${i18n[currentLang].speakBtn}
-                    </button>
-                    <button onclick="pronunciarPalabra('${nivel.word}')" class="mt-4 text-indigo-500 font-bold underline text-sm md:text-base">
-                        ${i18n[currentLang].speakHelp}
-                    </button>
                 `;
             }
             // JUEGO: PREGUNTAS (QUIZ)
             else if (nivel.type === 'quiz') {
-                html += `<div class="text-xl md:text-3xl font-bold text-gray-800 mb-8 bg-white p-4 rounded-xl shadow">${nivel.question[currentLang]}</div>`;
-                html += `<div class="flex flex-col gap-4">`;
+                html += `<div class="text-lg md:text-2xl font-bold text-gray-800 mb-6 bg-white p-4 md:p-6 rounded-2xl shadow">${nivel.question[currentLang]}</div>`;
+                html += `<div class="flex flex-col gap-3 w-full max-w-md mx-auto">`;
                 
                 // Mezclar opciones
                 let opciones = [...nivel.options[currentLang]].sort(() => Math.random() - 0.5);
@@ -571,7 +635,7 @@
                 opciones.forEach(opcion => {
                     html += `
                         <button onclick="verificarQuiz('${opcion}', '${nivel.answer[currentLang]}')" 
-                                class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-3 md:py-4 px-4 md:px-6 rounded-2xl shadow-md text-lg md:text-xl transform transition hover:-translate-y-1">
+                                class="touch-manipulation bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-bold py-4 px-6 rounded-2xl shadow-md text-lg md:text-xl w-full transform transition hover:-translate-y-1">
                             ${opcion}
                         </button>
                     `;
