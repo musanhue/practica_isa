@@ -51,7 +51,7 @@
         .btn-game {
             transition: all 0.2s ease;
         }
-        .btn-game:hover {
+        .btn-game:hover:not(:disabled) {
             transform: translateY(-5px) scale(1.05);
             box-shadow: 0 10px 20px rgba(0,0,0,0.1);
         }
@@ -261,6 +261,7 @@
         let puntaje = 0;
         let nivelActual = null;
         let completados = [];
+        let activeRecognition = null; // <- Esta variable es clave para evitar conflictos de micrófono
 
         // DOM Elements
         const scoreDisplay = document.getElementById('scoreDisplay');
@@ -496,35 +497,58 @@
             }
         }
 
-        // --- SISTEMA DE RECONOCIMIENTO DE VOZ (Voz a Texto) ---
+        // --- SISTEMA DE RECONOCIMIENTO DE VOZ MEJORADO ---
         function iniciarReconocimiento(palabraObjetivo) {
+            const btnHablar = document.getElementById('btnHablar');
+            
+            // PREVENCIÓN DE DOBLE CLIC: Si el botón ya está deshabilitado, no hacer nada.
+            if (!btnHablar || btnHablar.disabled) return; 
+
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
             
-            // Fallback para dispositivos no soportados (como Safari en iPad)
             if (!SpeechRecognition) {
                 mostrarFallbackMic();
                 return;
             }
 
-            const btnHablar = document.getElementById('btnHablar');
-            const textoOriginalBtn = btnHablar.innerHTML;
+            // 1. Bloquear el botón visual y funcionalmente de inmediato
+            btnHablar.disabled = true;
             btnHablar.innerHTML = i18n[currentLang].listening;
             btnHablar.classList.replace('bg-blue-500', 'bg-red-500');
-            btnHablar.classList.add('animate-pulse');
+            btnHablar.classList.replace('hover:bg-blue-600', 'hover:bg-red-600');
+            btnHablar.classList.add('animate-pulse', 'opacity-80', 'cursor-not-allowed');
 
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'en-US';
-            recognition.interimResults = false;
-            recognition.maxAlternatives = 1;
+            // 2. Si había una sesión de microfono previa trabada, la cancelamos primero
+            if (activeRecognition) {
+                try { activeRecognition.abort(); } catch(e) {}
+            }
+
+            activeRecognition = new SpeechRecognition();
+            activeRecognition.lang = 'en-US';
+            activeRecognition.interimResults = false;
+            activeRecognition.maxAlternatives = 1;
+
+            // Función interna para devolver el botón a su estado normal
+            const resetearBotonMic = () => {
+                if (btnHablar) {
+                    btnHablar.disabled = false;
+                    btnHablar.innerHTML = i18n[currentLang].speakBtn;
+                    btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
+                    btnHablar.classList.replace('hover:bg-red-600', 'hover:bg-blue-600');
+                    btnHablar.classList.remove('animate-pulse', 'opacity-80', 'cursor-not-allowed');
+                }
+                activeRecognition = null; // Limpiar la sesión actual
+            };
 
             try {
-                recognition.start();
+                activeRecognition.start();
             } catch (e) {
+                resetearBotonMic();
                 mostrarFallbackMic();
                 return;
             }
 
-            recognition.onresult = (event) => {
+            activeRecognition.onresult = (event) => {
                 const resultado = event.results[0][0].transcript.toLowerCase().trim();
                 const objetivo = palabraObjetivo.toLowerCase().trim();
                 
@@ -539,21 +563,19 @@
                 }
             };
 
-            recognition.onerror = (event) => {
+            activeRecognition.onerror = (event) => {
                 if(event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-                    // Si el usuario denegó el permiso o el navegador lo bloquea, usar fallback
+                    // Permiso denegado
                     mostrarFallbackMic();
-                } else {
+                } else if (event.error !== 'aborted') {
+                    // Si no fue cancelado a propósito, mostrar que no se escuchó bien
                     mostrarFeedback(false, i18n[currentLang].didNotHear);
                 }
             };
 
-            recognition.onend = () => {
-                if(document.getElementById('btnHablar')) { // Asegurarse de que el botón siga ahí y no haya sido reemplazado por el fallback
-                    btnHablar.innerHTML = i18n[currentLang].speakBtn;
-                    btnHablar.classList.replace('bg-red-500', 'bg-blue-500');
-                    btnHablar.classList.remove('animate-pulse');
-                }
+            // onend SIEMPRE se dispara cuando el micrófono se apaga (ya sea por error, resultado o inactividad)
+            activeRecognition.onend = () => {
+                resetearBotonMic();
             }
         }
 
@@ -615,7 +637,7 @@
                             ${nivel.word}
                         </div>
                         <button id="btnHablar" onclick="iniciarReconocimiento('${nivel.word}')" 
-                                class="touch-manipulation bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition hover:scale-105">
+                                class="touch-manipulation bg-blue-500 hover:bg-blue-600 text-white font-bold py-4 px-8 rounded-full shadow-lg text-xl md:text-2xl w-full transform transition">
                             ${i18n[currentLang].speakBtn}
                         </button>
                         <button onclick="pronunciarPalabra('${nivel.word}')" class="touch-manipulation mt-6 text-indigo-500 font-bold underline text-base md:text-lg block w-full">
@@ -650,6 +672,12 @@
         function cerrarJuego() {
             gameModal.classList.add('hidden');
             nivelActual = null;
+            
+            // Si cerramos el juego a la mitad, forzamos el apagado del micrófono
+            if (activeRecognition) {
+                try { activeRecognition.abort(); } catch(e) {}
+                activeRecognition = null;
+            }
         }
 
         // --- VERIFICADORES ---
